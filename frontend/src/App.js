@@ -34,6 +34,12 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+function statusTone(status) {
+  if (['APPROVED', 'RESOLVED', 'CLOSED', 'READ', 'AVAILABLE', 'ACTIVE'].includes(status)) return 'tone-fresh';
+  if (['REJECTED', 'UNAVAILABLE', 'CRITICAL', 'INACTIVE'].includes(status)) return 'tone-alert';
+  return 'tone-warm';
+}
+
 function App() {
   const [mode, setMode] = useState('login');
   const [tab, setTab] = useState('Facilities');
@@ -86,6 +92,16 @@ function App() {
     if (isTech) return ['Facilities', 'Incidents', 'Notifications'];
     return ['Facilities', 'Bookings', 'Incidents', 'Notifications'];
   }, [isAdmin, isTech]);
+
+  const dashboardStats = useMemo(
+    () => [
+      { label: 'Facilities', value: facilities.length, hint: 'Spaces and assets ready to use' },
+      { label: 'My Bookings', value: bookings.length, hint: 'Personal reservations tracked' },
+      { label: 'My Incidents', value: incidents.length, hint: 'Issues reported and monitored' },
+      { label: 'Unread Alerts', value: unread, hint: 'Pending updates requiring attention' },
+    ],
+    [facilities.length, bookings.length, incidents.length, unread]
+  );
 
   const clearMessages = () => {
     setError('');
@@ -333,6 +349,12 @@ function App() {
           Unified facilities, bookings, incident management, notifications, and role-based operations
           for modern smart campuses.
         </p>
+        <div className="brand-tags">
+          <span>Facilities</span>
+          <span>Bookings</span>
+          <span>Incidents</span>
+          <span>Role Security</span>
+        </div>
         <a className="oauth-btn" href="http://localhost:8080/oauth2/authorization/google">
           Continue with Google OAuth
         </a>
@@ -431,12 +453,15 @@ function App() {
   return (
     <main className="app">
       <header className="topbar">
-        <div>
+        <div className="topbar-copy">
           <h1>CampusX</h1>
-          <p>Experience the future of education.</p>
+          <p>Smart operations cockpit for your entire campus lifecycle.</p>
         </div>
         <div className="top-actions">
           <span className="role-pill">{user?.role || '-'}</span>
+          <button onClick={loadAll} className="ghost" type="button">
+            Refresh
+          </button>
           <button onClick={onLogout} className="ghost" type="button">
             Logout
           </button>
@@ -445,6 +470,16 @@ function App() {
 
       {error ? <div className="alert error">{error}</div> : null}
       {info ? <div className="alert success">{info}</div> : null}
+
+      <section className="insight-strip">
+        {dashboardStats.map((item) => (
+          <article className="insight-card" key={item.label}>
+            <p>{item.label}</p>
+            <h2>{item.value}</h2>
+            <small>{item.hint}</small>
+          </article>
+        ))}
+      </section>
 
       <nav className="tabs">
         {visibleTabs.map((item) => (
@@ -479,7 +514,7 @@ function App() {
                 <Empty text="No facilities found." />
               ) : (
                 facilities.map((f) => (
-                  <div className="card" key={f.id}>
+                  <div className={`card ${f.available ? 'tone-fresh' : 'tone-alert'}`} key={f.id}>
                     <div className="card-header">
                       <h3>{f.name}</h3>
                       <span className={f.available ? 'status ok' : 'status bad'}>
@@ -615,7 +650,7 @@ function App() {
                 <Empty text="No bookings yet." />
               ) : (
                 bookings.map((b) => (
-                  <div className="card" key={b.id}>
+                  <div className={`card ${statusTone(b.status)}`} key={b.id}>
                     <div className="card-header">
                       <h3>{b.facility?.name}</h3>
                       <span className={`status ${b.status === 'APPROVED' ? 'ok' : b.status === 'PENDING' ? 'wait' : 'bad'}`}>
@@ -642,7 +677,7 @@ function App() {
                   <Empty text="No booking requests." />
                 ) : (
                   allBookings.map((b) => (
-                    <div className="card" key={b.id}>
+                    <div className={`card ${statusTone(b.status)}`} key={b.id}>
                       <h3>
                         #{b.id} {b.facility?.name}
                       </h3>
@@ -725,7 +760,7 @@ function App() {
                 <Empty text="No tickets submitted." />
               ) : (
                 incidents.map((i) => (
-                  <div className="card" key={i.id}>
+                  <div className={`card ${statusTone(i.status)}`} key={i.id}>
                     <div className="card-header">
                       <h3>#{i.id} {i.title}</h3>
                       <span className={`status ${i.status === 'RESOLVED' || i.status === 'CLOSED' ? 'ok' : 'wait'}`}>
@@ -753,7 +788,7 @@ function App() {
                   <Empty text="No assigned incidents." />
                 ) : (
                   assignedIncidents.map((i) => (
-                    <div className="card" key={i.id}>
+                    <div className={`card ${statusTone(i.status)}`} key={i.id}>
                       <h3>
                         #{i.id} {i.title}
                       </h3>
@@ -834,7 +869,7 @@ function App() {
                 <Empty text="No notifications." />
               ) : (
                 notifications.map((n) => (
-                  <div className="card" key={n.id}>
+                  <div className={`card ${n.isRead ? 'tone-fresh' : 'tone-warm'}`} key={n.id}>
                     <div className="card-header">
                       <h3>{n.type}</h3>
                       <span className={`status ${n.isRead ? 'ok' : 'wait'}`}>{n.isRead ? 'Read' : 'Unread'}</span>
