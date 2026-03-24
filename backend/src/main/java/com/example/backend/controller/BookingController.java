@@ -8,6 +8,7 @@ import com.example.backend.service.BookingService;
 import com.example.backend.service.CurrentUserService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -82,6 +83,22 @@ public class BookingController {
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> updateStatusPatch(@PathVariable Long id, @Valid @RequestBody BookingDecisionRequest request) {
         return ViewMapper.booking(bookingService.updateStatus(id, request, currentUserService.getCurrentUser()));
+    }
+
+    @GetMapping("/availability")
+    public Map<String, Object> checkAvailability(
+        @RequestParam Long resourceId,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bookingDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime
+    ) {
+        boolean available = bookingService.isSlotAvailable(resourceId, bookingDate, startTime, endTime);
+        return Map.of(
+            "available",
+            available,
+            "message",
+            available ? "Time slot is available" : "Time slot is not available"
+        );
     }
 
     @DeleteMapping("/{id}")

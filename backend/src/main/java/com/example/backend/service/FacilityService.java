@@ -61,6 +61,7 @@ public class FacilityService {
         facility.setDescription(request.getDescription());
         facility.setAvailable(Boolean.TRUE.equals(request.getAvailable()));
         facility.setStatus(request.getStatus());
+        facility.setOperatingHours(request.getOperatingHours());
         facility.setOpeningTime(request.getOpeningTime());
         facility.setClosingTime(request.getClosingTime());
     }

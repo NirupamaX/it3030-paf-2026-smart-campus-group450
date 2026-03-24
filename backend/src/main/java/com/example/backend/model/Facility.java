@@ -43,7 +43,10 @@ public class Facility {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ResourceStatus status = ResourceStatus.ACTIVE;
+    private ResourceStatus status = ResourceStatus.AVAILABLE;
+
+    @Column(nullable = false)
+    private String operatingHours;
 
     @Column(nullable = false)
     private String openingTime;

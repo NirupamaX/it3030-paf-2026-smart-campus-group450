@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/facilities")
+@RequestMapping({ "/api/v1/facilities", "/api/facilities" })
 public class FacilityController {
 
     private final FacilityService facilityService;

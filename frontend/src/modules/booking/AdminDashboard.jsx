@@ -14,7 +14,7 @@ function statusClass(status) {
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState([]);
   const [filters, setFilters] = useState({ status: 'PENDING', bookingDate: '' });
-  const [reasons, setReasons] = useState({});
+  const [rejectModal, setRejectModal] = useState({ open: false, bookingId: null, reason: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,22 +43,36 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.status, query.bookingDate]);
 
-  const decide = async (id, status) => {
+  const decide = async (id, status, rejectionReason = null) => {
     setError('');
-    if (status === 'REJECTED' && !reasons[id]?.trim()) {
-      setError('Rejection reason is required.');
-      return;
-    }
 
     try {
       await updateBookingStatus(id, {
         status,
-        rejectionReason: status === 'REJECTED' ? reasons[id] : null,
+        rejectionReason,
       });
       await load();
     } catch (requestError) {
       setError(requestError.message);
     }
+  };
+
+  const openRejectModal = (bookingId) => {
+    setRejectModal({ open: true, bookingId, reason: '' });
+  };
+
+  const closeRejectModal = () => {
+    setRejectModal({ open: false, bookingId: null, reason: '' });
+  };
+
+  const confirmReject = async () => {
+    if (!rejectModal.reason.trim()) {
+      setError('Rejection reason is required.');
+      return;
+    }
+
+    await decide(rejectModal.bookingId, 'REJECTED', rejectModal.reason.trim());
+    closeRejectModal();
   };
 
   return (
@@ -103,7 +117,7 @@ export default function AdminDashboard() {
               <th>Date</th>
               <th>Time</th>
               <th>Status</th>
-              <th>Rejection Reason</th>
+              <th>Reason</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -120,20 +134,7 @@ export default function AdminDashboard() {
                 <td>
                   <span className={statusClass(booking.status)}>{booking.status}</span>
                 </td>
-                <td>
-                  <input
-                    type="text"
-                    placeholder="Reason if rejecting"
-                    value={reasons[booking.id] || ''}
-                    onChange={(event) =>
-                      setReasons((previous) => ({
-                        ...previous,
-                        [booking.id]: event.target.value,
-                      }))
-                    }
-                    disabled={booking.status !== 'PENDING'}
-                  />
-                </td>
+                <td>{booking.rejectionReason || '-'}</td>
                 <td>
                   {booking.status === 'PENDING' && (
                     <>
@@ -147,7 +148,7 @@ export default function AdminDashboard() {
                       <button
                         type="button"
                         className="btn-danger"
-                        onClick={() => decide(booking.id, 'REJECTED')}
+                        onClick={() => openRejectModal(booking.id)}
                       >
                         Reject
                       </button>
@@ -158,6 +159,27 @@ export default function AdminDashboard() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {rejectModal.open && (
+        <div className="modal-backdrop" role="presentation" onClick={closeRejectModal}>
+          <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <h3>Reject Booking #{rejectModal.bookingId}</h3>
+            <textarea
+              placeholder="Enter rejection reason"
+              value={rejectModal.reason}
+              onChange={(event) => setRejectModal((previous) => ({ ...previous, reason: event.target.value }))}
+            />
+            <div className="modal-actions">
+              <button type="button" className="btn-muted" onClick={closeRejectModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-danger" onClick={confirmReject}>
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

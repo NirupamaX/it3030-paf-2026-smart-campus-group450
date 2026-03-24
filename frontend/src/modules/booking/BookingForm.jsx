@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { createBookingRequest } from './bookingApi';
+import { useEffect, useMemo, useState } from 'react';
+import { checkBookingAvailability, createBookingRequest, getFacilities } from './bookingApi';
 import './booking.css';
 
 function toInputDate(date) {
@@ -10,6 +10,7 @@ function toInputDate(date) {
 }
 
 export default function BookingForm({ resources = [], onCreated }) {
+  const [facilities, setFacilities] = useState(resources);
   const [form, setForm] = useState({
     resourceId: '',
     bookingDate: toInputDate(new Date()),
@@ -19,15 +20,45 @@ export default function BookingForm({ resources = [], onCreated }) {
     attendees: 1,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [availabilityMessage, setAvailabilityMessage] = useState('');
+
+  useEffect(() => {
+    if (resources.length > 0) {
+      setFacilities(resources);
+      return;
+    }
+
+    const loadFacilities = async () => {
+      try {
+        const list = await getFacilities();
+        setFacilities(list);
+      } catch (requestError) {
+        setError(requestError.message);
+      }
+    };
+
+    loadFacilities();
+  }, [resources]);
+
+  const validationError = useMemo(() => {
+    if (!form.resourceId || !form.bookingDate || !form.startTime || !form.endTime || !form.purpose) {
+      return 'All fields are required.';
+    }
+    if (form.endTime <= form.startTime) {
+      return 'End time must be later than start time.';
+    }
+    if (Number(form.attendees) < 1) {
+      return 'Expected attendees must be at least 1.';
+    }
+    return '';
+  }, [form]);
 
   const canSubmit = useMemo(() => {
-    if (!form.resourceId || !form.bookingDate || !form.startTime || !form.endTime || !form.purpose) {
-      return false;
-    }
-    return form.endTime > form.startTime;
-  }, [form]);
+    return !validationError;
+  }, [validationError]);
 
   const onChange = (field, value) => {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -38,8 +69,8 @@ export default function BookingForm({ resources = [], onCreated }) {
     setError('');
     setSuccess('');
 
-    if (form.endTime <= form.startTime) {
-      setError('End time must be later than start time.');
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -51,7 +82,7 @@ export default function BookingForm({ resources = [], onCreated }) {
         startTime: form.startTime,
         endTime: form.endTime,
         purpose: form.purpose.trim(),
-        attendees: Number(form.attendees),
+        expectedAttendees: Number(form.attendees),
       });
 
       setSuccess('Booking request submitted. Status is PENDING until reviewed by admin.');
@@ -70,6 +101,32 @@ export default function BookingForm({ resources = [], onCreated }) {
     }
   };
 
+  const onCheckAvailability = async () => {
+    setError('');
+    setSuccess('');
+    setAvailabilityMessage('');
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setCheckingAvailability(true);
+    try {
+      const result = await checkBookingAvailability({
+        resourceId: Number(form.resourceId),
+        bookingDate: form.bookingDate,
+        startTime: form.startTime,
+        endTime: form.endTime,
+      });
+      setAvailabilityMessage(result.message || (result.available ? 'Slot available' : 'Slot unavailable'));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
   return (
     <section className="booking-card">
       <h2>Booking Request Form</h2>
@@ -80,7 +137,7 @@ export default function BookingForm({ resources = [], onCreated }) {
           required
         >
           <option value="">Select Resource</option>
-          {resources.map((resource) => (
+          {facilities.map((resource) => (
             <option key={resource.id} value={resource.id}>
               {resource.name} ({resource.location})
             </option>
@@ -125,14 +182,19 @@ export default function BookingForm({ resources = [], onCreated }) {
         />
 
         <div className="booking-actions full">
+          <button type="button" className="btn-muted" onClick={onCheckAvailability} disabled={checkingAvailability}>
+            {checkingAvailability ? 'Checking...' : 'Check Availability'}
+          </button>
           <button type="submit" className="btn-primary" disabled={!canSubmit || submitting}>
             {submitting ? 'Submitting...' : 'Submit Booking'}
           </button>
         </div>
       </form>
 
+      {validationError && <p className="message-error">{validationError}</p>}
       {error && <p className="message-error">{error}</p>}
       {success && <p className="message-success">{success}</p>}
+      {availabilityMessage && <p className="message-success">{availabilityMessage}</p>}
     </section>
   );
 }

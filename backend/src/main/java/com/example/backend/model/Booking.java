@@ -48,8 +48,8 @@ public class Booking {
     @Column(nullable = false, length = 1000)
     private String purpose;
 
-    @Column(nullable = false)
-    private Integer attendees;
+    @Column(name = "expected_attendees", nullable = false)
+    private Integer expectedAttendees;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

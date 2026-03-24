@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -31,5 +32,6 @@ public class BookingRequest {
 
     @NotNull
     @Min(1)
-    private Integer attendees;
+    @JsonAlias("attendees")
+    private Integer expectedAttendees;
 }

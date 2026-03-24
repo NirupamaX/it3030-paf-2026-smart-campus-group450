@@ -29,11 +29,12 @@ CREATE TABLE IF NOT EXISTS facilities (
   description VARCHAR(2000),
   available BIT(1) NOT NULL DEFAULT b'1',
   status VARCHAR(32) NOT NULL,
+  operating_hours VARCHAR(255) NOT NULL,
   opening_time VARCHAR(255) NOT NULL,
   closing_time VARCHAR(255) NOT NULL,
   created_at DATETIME(6) NOT NULL,
   CONSTRAINT pk_facilities PRIMARY KEY (id),
-  CONSTRAINT chk_facilities_status CHECK (status IN ('ACTIVE', 'OUT_OF_SERVICE')),
+  CONSTRAINT chk_facilities_status CHECK (status IN ('AVAILABLE', 'UNDER_MAINTENANCE', 'OUT_OF_SERVICE')),
   CONSTRAINT chk_facilities_capacity CHECK (capacity > 0)
 );
 
@@ -45,7 +46,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   start_time TIME(6) NOT NULL,
   end_time TIME(6) NOT NULL,
   purpose VARCHAR(1000) NOT NULL,
-  attendees INT NOT NULL,
+  expected_attendees INT NOT NULL,
   status VARCHAR(32) NOT NULL,
   rejection_reason VARCHAR(1000),
   created_at DATETIME(6) NOT NULL,
@@ -54,7 +55,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   CONSTRAINT fk_bookings_user FOREIGN KEY (user_id) REFERENCES users (id),
   CONSTRAINT chk_bookings_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')),
   CONSTRAINT chk_bookings_time CHECK (end_time > start_time),
-  CONSTRAINT chk_bookings_attendees CHECK (attendees > 0)
+  CONSTRAINT chk_bookings_expected_attendees CHECK (expected_attendees > 0)
 );
 
 CREATE TABLE IF NOT EXISTS incident_tickets (

@@ -40,6 +40,7 @@
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 .btn-primary,
@@ -125,6 +126,45 @@
 .message-success {
   margin-top: 8px;
   color: #176534;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  width: min(540px, 92vw);
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #d9e0ea;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+}
+
+.modal-card h3 {
+  margin: 0 0 10px;
+  color: #1d3557;
+}
+
+.modal-card textarea {
+  width: 100%;
+  min-height: 110px;
+  border: 1px solid #c9d5e3;
+  border-radius: 8px;
+  padding: 10px;
+  resize: vertical;
+}
+
+.modal-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 @media (max-width: 768px) {
