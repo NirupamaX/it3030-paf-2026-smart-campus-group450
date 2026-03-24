@@ -34,6 +34,15 @@ export async function createBookingRequest(payload) {
   }
 }
 
+export async function getFacilities() {
+  try {
+    const response = await api.get('/v1/facilities');
+    return response.data;
+  } catch (error) {
+    throw new Error(normalizeError(error));
+  }
+}
+
 export async function getUserBookings(userId) {
   try {
     const response = await api.get(`/v1/bookings/user/${userId}`);
@@ -65,6 +74,15 @@ export async function cancelBooking(id) {
   try {
     await api.delete(`/v1/bookings/${id}`);
     return true;
+  } catch (error) {
+    throw new Error(normalizeError(error));
+  }
+}
+
+export async function checkBookingAvailability(params) {
+  try {
+    const response = await api.get('/v1/bookings/availability', { params });
+    return response.data;
   } catch (error) {
     throw new Error(normalizeError(error));
   }

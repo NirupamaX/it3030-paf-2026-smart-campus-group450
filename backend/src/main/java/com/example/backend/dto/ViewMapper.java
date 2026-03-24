@@ -35,6 +35,7 @@ public final class ViewMapper {
         map.put("description", facility.getDescription());
         map.put("available", facility.isAvailable());
         map.put("status", facility.getStatus());
+        map.put("operatingHours", facility.getOperatingHours());
         map.put("openingTime", facility.getOpeningTime());
         map.put("closingTime", facility.getClosingTime());
         return map;
@@ -49,14 +50,15 @@ public final class ViewMapper {
         map.put("startTime", booking.getStartTime());
         map.put("endTime", booking.getEndTime());
         map.put("purpose", booking.getPurpose());
-        map.put("attendees", booking.getAttendees());
+        map.put("expectedAttendees", booking.getExpectedAttendees());
+        map.put("attendees", booking.getExpectedAttendees());
         map.put("status", booking.getStatus());
         map.put("rejectionReason", booking.getRejectionReason());
 
         // Compatibility keys used by existing frontend screens.
         map.put("facility", facility(booking.getFacility()));
         map.put("user", user(booking.getUser()));
-        map.put("expectedAttendees", booking.getAttendees());
+        map.put("expectedAttendees", booking.getExpectedAttendees());
         map.put("decisionComment", booking.getRejectionReason());
         map.put("createdAt", booking.getCreatedAt());
         return map;

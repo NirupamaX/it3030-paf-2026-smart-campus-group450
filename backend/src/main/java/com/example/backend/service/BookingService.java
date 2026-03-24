@@ -49,14 +49,23 @@ public class BookingService {
             throw new ResponseStatusException(BAD_REQUEST, "Booking date cannot be in the past");
         }
 
+        LocalDateTime requestedStartDateTime = LocalDateTime.of(request.getBookingDate(), request.getStartTime());
+        if (!requestedStartDateTime.isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(BAD_REQUEST, "Start time must be in the future");
+        }
+
         Facility facility = facilityService.getById(request.getResourceId());
-        if (!facility.isAvailable() || facility.getStatus() == ResourceStatus.OUT_OF_SERVICE) {
+        if (
+            !facility.isAvailable() ||
+            facility.getStatus() == ResourceStatus.OUT_OF_SERVICE ||
+            facility.getStatus() == ResourceStatus.UNDER_MAINTENANCE
+        ) {
             throw new ResponseStatusException(BAD_REQUEST, "Facility is currently not available for booking");
         }
 
         if (
-            request.getAttendees() != null &&
-            request.getAttendees() > facility.getCapacity()
+            request.getExpectedAttendees() != null &&
+            request.getExpectedAttendees() > facility.getCapacity()
         ) {
             throw new ResponseStatusException(
                 BAD_REQUEST,
@@ -86,7 +95,7 @@ public class BookingService {
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
         booking.setPurpose(request.getPurpose());
-        booking.setAttendees(request.getAttendees());
+        booking.setExpectedAttendees(request.getExpectedAttendees());
         booking.setStatus(BookingStatus.PENDING);
 
         Booking saved = bookingRepository.save(booking);
@@ -98,6 +107,35 @@ public class BookingService {
         );
 
         return saved;
+    }
+
+    public boolean isSlotAvailable(Long resourceId, LocalDate bookingDate, java.time.LocalTime startTime, java.time.LocalTime endTime) {
+        if (endTime.isBefore(startTime) || endTime.equals(startTime)) {
+            throw new ResponseStatusException(BAD_REQUEST, "End time must be after start time");
+        }
+
+        if (bookingDate.isBefore(LocalDate.now())) {
+            throw new ResponseStatusException(BAD_REQUEST, "Booking date cannot be in the past");
+        }
+
+        Facility facility = facilityService.getById(resourceId);
+        if (
+            !facility.isAvailable() ||
+            facility.getStatus() == ResourceStatus.OUT_OF_SERVICE ||
+            facility.getStatus() == ResourceStatus.UNDER_MAINTENANCE
+        ) {
+            return false;
+        }
+
+        List<Booking> conflicts = bookingRepository.findOverlappingBookings(
+            resourceId,
+            bookingDate,
+            Set.of(BookingStatus.PENDING, BookingStatus.APPROVED),
+            startTime,
+            endTime
+        );
+
+        return conflicts.isEmpty();
     }
 
     public List<Booking> listAll(BookingStatus status, LocalDate bookingDate) {

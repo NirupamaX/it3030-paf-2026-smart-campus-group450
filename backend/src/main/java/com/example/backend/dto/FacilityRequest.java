@@ -33,6 +33,9 @@ public class FacilityRequest {
     private ResourceStatus status;
 
     @NotBlank
+    private String operatingHours;
+
+    @NotBlank
     private String openingTime;
 
     @NotBlank

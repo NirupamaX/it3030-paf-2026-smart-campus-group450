@@ -4,8 +4,10 @@ export { default as AdminDashboard } from './AdminDashboard';
 export { default as BookingCalendarView } from './BookingCalendarView';
 export {
   createBookingRequest,
+  getFacilities,
   getUserBookings,
   getAllBookings,
   updateBookingStatus,
   cancelBooking,
+  checkBookingAvailability,
 } from './bookingApi';
