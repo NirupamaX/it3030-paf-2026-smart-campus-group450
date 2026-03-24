@@ -77,6 +77,19 @@ export async function createFacility(payload) {
   });
 }
 
+export async function updateFacility(id, payload) {
+  return request(`/facilities/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteFacility(id) {
+  return request(`/facilities/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function createBooking(payload) {
   return request('/bookings', {
     method: 'POST',

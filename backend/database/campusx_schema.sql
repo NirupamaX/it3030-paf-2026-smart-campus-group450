@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS facilities (
   description VARCHAR(2000),
   available BIT(1) NOT NULL DEFAULT b'1',
   status VARCHAR(32) NOT NULL,
-  operating_hours VARCHAR(255) NOT NULL,
+  operating_hours VARCHAR(255) NOT NULL DEFAULT '08:00-20:00',
   opening_time VARCHAR(255) NOT NULL,
   closing_time VARCHAR(255) NOT NULL,
   created_at DATETIME(6) NOT NULL,

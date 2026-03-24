@@ -246,6 +246,11 @@ button {
   align-items: center;
 }
 
+.facility-actions {
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+
 .card-list {
   display: grid;
   gap: 10px;
