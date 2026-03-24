@@ -12,6 +12,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,7 +29,7 @@ public class Booking {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "facility_id", nullable = false)
+    @JoinColumn(name = "resource_id", nullable = false)
     private Facility facility;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,26 +37,26 @@ public class Booking {
     private User user;
 
     @Column(nullable = false)
-    private LocalDateTime startTime;
+    private LocalDate bookingDate;
 
     @Column(nullable = false)
-    private LocalDateTime endTime;
+    private LocalTime startTime;
+
+    @Column(nullable = false)
+    private LocalTime endTime;
 
     @Column(nullable = false, length = 1000)
     private String purpose;
 
-    @Column
-    private Integer expectedAttendees;
+    @Column(nullable = false)
+    private Integer attendees;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status;
 
-    @Column(nullable = false)
-    private Boolean conflictFlag = false;
-
-    @Column(length = 500)
-    private String decisionComment;
+    @Column(length = 1000)
+    private String rejectionReason;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

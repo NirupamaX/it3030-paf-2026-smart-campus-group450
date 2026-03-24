@@ -39,22 +39,22 @@ CREATE TABLE IF NOT EXISTS facilities (
 
 CREATE TABLE IF NOT EXISTS bookings (
   id BIGINT NOT NULL AUTO_INCREMENT,
-  facility_id BIGINT NOT NULL,
+  resource_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
-  start_time DATETIME(6) NOT NULL,
-  end_time DATETIME(6) NOT NULL,
+  booking_date DATE NOT NULL,
+  start_time TIME(6) NOT NULL,
+  end_time TIME(6) NOT NULL,
   purpose VARCHAR(1000) NOT NULL,
-  expected_attendees INT,
+  attendees INT NOT NULL,
   status VARCHAR(32) NOT NULL,
-  conflict_flag BIT(1) NOT NULL DEFAULT b'0',
-  decision_comment VARCHAR(500),
+  rejection_reason VARCHAR(1000),
   created_at DATETIME(6) NOT NULL,
   CONSTRAINT pk_bookings PRIMARY KEY (id),
-  CONSTRAINT fk_bookings_facility FOREIGN KEY (facility_id) REFERENCES facilities (id),
+  CONSTRAINT fk_bookings_resource FOREIGN KEY (resource_id) REFERENCES facilities (id),
   CONSTRAINT fk_bookings_user FOREIGN KEY (user_id) REFERENCES users (id),
   CONSTRAINT chk_bookings_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')),
   CONSTRAINT chk_bookings_time CHECK (end_time > start_time),
-  CONSTRAINT chk_bookings_expected_attendees CHECK (expected_attendees IS NULL OR expected_attendees > 0)
+  CONSTRAINT chk_bookings_attendees CHECK (attendees > 0)
 );
 
 CREATE TABLE IF NOT EXISTS incident_tickets (
@@ -114,9 +114,9 @@ CREATE TABLE IF NOT EXISTS notifications (
   CONSTRAINT chk_notifications_type CHECK (type IN ('BOOKING', 'INCIDENT', 'SYSTEM'))
 );
 
-CREATE INDEX idx_bookings_facility ON bookings (facility_id);
+CREATE INDEX idx_bookings_resource ON bookings (resource_id);
 CREATE INDEX idx_bookings_user ON bookings (user_id);
-CREATE INDEX idx_bookings_time_window ON bookings (facility_id, start_time, end_time);
+CREATE INDEX idx_bookings_time_window ON bookings (resource_id, booking_date, start_time, end_time);
 CREATE INDEX idx_incidents_reporter ON incident_tickets (reporter_id);
 CREATE INDEX idx_incidents_technician ON incident_tickets (technician_id);
 CREATE INDEX idx_incidents_status_updated ON incident_tickets (status, updated_at);

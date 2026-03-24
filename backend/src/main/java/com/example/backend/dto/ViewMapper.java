@@ -43,15 +43,21 @@ public final class ViewMapper {
     public static Map<String, Object> booking(Booking booking) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", booking.getId());
-        map.put("facility", facility(booking.getFacility()));
-        map.put("user", user(booking.getUser()));
+        map.put("resourceId", booking.getFacility().getId());
+        map.put("userId", booking.getUser().getId());
+        map.put("bookingDate", booking.getBookingDate());
         map.put("startTime", booking.getStartTime());
         map.put("endTime", booking.getEndTime());
         map.put("purpose", booking.getPurpose());
-        map.put("expectedAttendees", booking.getExpectedAttendees());
+        map.put("attendees", booking.getAttendees());
         map.put("status", booking.getStatus());
-        map.put("conflictFlag", booking.getConflictFlag());
-        map.put("decisionComment", booking.getDecisionComment());
+        map.put("rejectionReason", booking.getRejectionReason());
+
+        // Compatibility keys used by existing frontend screens.
+        map.put("facility", facility(booking.getFacility()));
+        map.put("user", user(booking.getUser()));
+        map.put("expectedAttendees", booking.getAttendees());
+        map.put("decisionComment", booking.getRejectionReason());
         map.put("createdAt", booking.getCreatedAt());
         return map;
     }

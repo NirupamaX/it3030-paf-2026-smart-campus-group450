@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +10,9 @@ import lombok.Setter;
 public class BookingDecisionRequest {
 
     @NotBlank
-    private String decision;
+    @JsonAlias("decision")
+    private String status;
 
-    private String comment;
+    @JsonAlias("comment")
+    private String rejectionReason;
 }
