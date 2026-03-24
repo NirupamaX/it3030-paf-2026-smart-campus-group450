@@ -4,6 +4,7 @@ import {
   assignIncident,
   bookingDecision,
   createBooking,
+  deleteFacility,
   createFacility,
   createIncident,
   getMe,
@@ -20,6 +21,7 @@ import {
   markNotificationRead,
   register,
   updateIncidentStatus,
+  updateFacility,
 } from './api';
 
 const ROLES = ['STUDENT', 'TECHNICIAN', 'ADMIN'];
@@ -34,10 +36,35 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+function todayDateValue() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function toMinutes(timeValue) {
+  if (!timeValue || !timeValue.includes(':')) return null;
+  const [h, m] = timeValue.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+
 function statusTone(status) {
   if (['APPROVED', 'RESOLVED', 'CLOSED', 'READ', 'AVAILABLE', 'ACTIVE'].includes(status)) return 'tone-fresh';
   if (['REJECTED', 'UNAVAILABLE', 'CRITICAL', 'INACTIVE'].includes(status)) return 'tone-alert';
   return 'tone-warm';
+}
+
+function isFacilityBookableByStatus(status) {
+  return status === 'ACTIVE' || status === 'AVAILABLE';
+}
+
+function facilityStatusBadge(status) {
+  if (status === 'UNDER_MAINTENANCE') {
+    return { text: 'Under Maintenance', cls: 'wait' };
+  }
+  if (status === 'OUT_OF_SERVICE') {
+    return { text: 'Out of Service', cls: 'bad' };
+  }
+  return { text: 'Available', cls: 'ok' };
 }
 
 function App() {
@@ -69,10 +96,20 @@ function App() {
     capacity: 1,
     description: '',
     available: true,
+    status: 'ACTIVE',
+    operatingHours: '08:00-20:00',
     openingTime: '08:00',
     closingTime: '20:00',
   });
-  const [bookingForm, setBookingForm] = useState({ facilityId: '', startTime: '', endTime: '', purpose: '' });
+  const [editingFacilityId, setEditingFacilityId] = useState(null);
+  const [bookingForm, setBookingForm] = useState({
+    facilityId: '',
+    bookingDate: todayDateValue(),
+    startTime: '',
+    endTime: '',
+    purpose: '',
+    expectedAttendees: 1,
+  });
   const [incidentForm, setIncidentForm] = useState({
     title: '',
     description: '',
@@ -86,6 +123,10 @@ function App() {
   const role = user?.role;
   const isAdmin = role === 'ADMIN';
   const isTech = role === 'TECHNICIAN';
+  const selectedBookingFacility = useMemo(
+    () => facilities.find((f) => String(f.id) === String(bookingForm.facilityId)) || null,
+    [facilities, bookingForm.facilityId]
+  );
 
   const visibleTabs = useMemo(() => {
     if (isAdmin) return TABS;
@@ -229,18 +270,68 @@ function App() {
     e.preventDefault();
     clearMessages();
     try {
-      await createFacility({ ...facilityForm, capacity: Number(facilityForm.capacity) });
-      setInfo('Facility added.');
-      setFacilityForm({
-        name: '',
-        type: '',
-        location: '',
-        capacity: 1,
-        description: '',
-        available: true,
-        openingTime: '08:00',
-        closingTime: '20:00',
-      });
+      const payload = {
+        ...facilityForm,
+        capacity: Number(facilityForm.capacity),
+        available: isFacilityBookableByStatus(facilityForm.status),
+      };
+      if (editingFacilityId) {
+        await updateFacility(editingFacilityId, payload);
+        setInfo('Facility updated.');
+      } else {
+        await createFacility(payload);
+        setInfo('Facility added.');
+      }
+      resetFacilityForm();
+      await loadFacilities(facilitySearch);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const resetFacilityForm = () => {
+    setFacilityForm({
+      name: '',
+      type: '',
+      location: '',
+      capacity: 1,
+      description: '',
+      available: true,
+      status: 'ACTIVE',
+      operatingHours: '08:00-20:00',
+      openingTime: '08:00',
+      closingTime: '20:00',
+    });
+    setEditingFacilityId(null);
+  };
+
+  const startEditFacility = (facility) => {
+    setEditingFacilityId(facility.id);
+    setFacilityForm({
+      name: facility.name || '',
+      type: facility.type || '',
+      location: facility.location || '',
+      capacity: facility.capacity || 1,
+      description: facility.description || '',
+      available: Boolean(facility.available),
+      status: facility.status === 'AVAILABLE' ? 'ACTIVE' : (facility.status || 'ACTIVE'),
+      operatingHours: facility.operatingHours || `${facility.openingTime || '08:00'}-${facility.closingTime || '20:00'}`,
+      openingTime: facility.openingTime || '08:00',
+      closingTime: facility.closingTime || '20:00',
+    });
+  };
+
+  const removeFacility = async (facilityId) => {
+    clearMessages();
+    if (!window.confirm('Delete this facility? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await deleteFacility(facilityId);
+      setInfo('Facility deleted.');
+      if (editingFacilityId === facilityId) {
+        resetFacilityForm();
+      }
       await loadFacilities(facilitySearch);
     } catch (err) {
       setError(err.message);
@@ -251,14 +342,50 @@ function App() {
     e.preventDefault();
     clearMessages();
     try {
+      if (bookingForm.bookingDate < todayDateValue()) {
+        setError('You cannot book a date before today.');
+        return;
+      }
+
+      const startMinutes = toMinutes(bookingForm.startTime);
+      const endMinutes = toMinutes(bookingForm.endTime);
+      if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+        setError('End time must be after start time.');
+        return;
+      }
+
+      if (selectedBookingFacility?.openingTime && selectedBookingFacility?.closingTime) {
+        const openingMinutes = toMinutes(selectedBookingFacility.openingTime);
+        const closingMinutes = toMinutes(selectedBookingFacility.closingTime);
+        if (
+          openingMinutes !== null &&
+          closingMinutes !== null &&
+          (startMinutes < openingMinutes || endMinutes > closingMinutes)
+        ) {
+          setError(
+            `This facility can only be booked between ${selectedBookingFacility.openingTime} and ${selectedBookingFacility.closingTime}.`
+          );
+          return;
+        }
+      }
+
       await createBooking({
-        facilityId: Number(bookingForm.facilityId),
+        resourceId: Number(bookingForm.facilityId),
+        bookingDate: bookingForm.bookingDate,
         startTime: bookingForm.startTime,
         endTime: bookingForm.endTime,
         purpose: bookingForm.purpose,
+        expectedAttendees: Number(bookingForm.expectedAttendees),
       });
       setInfo('Booking submitted.');
-      setBookingForm({ facilityId: '', startTime: '', endTime: '', purpose: '' });
+      setBookingForm({
+        facilityId: '',
+        bookingDate: todayDateValue(),
+        startTime: '',
+        endTime: '',
+        purpose: '',
+        expectedAttendees: 1,
+      });
       await loadBookings();
       await loadNotifications();
     } catch (err) {
@@ -514,11 +641,11 @@ function App() {
                 <Empty text="No facilities found." />
               ) : (
                 facilities.map((f) => (
-                  <div className={`card ${f.available ? 'tone-fresh' : 'tone-alert'}`} key={f.id}>
+                  <div className={`card ${isFacilityBookableByStatus(f.status) ? 'tone-fresh' : 'tone-alert'}`} key={f.id}>
                     <div className="card-header">
                       <h3>{f.name}</h3>
-                      <span className={f.available ? 'status ok' : 'status bad'}>
-                        {f.available ? 'Available' : 'Unavailable'}
+                      <span className={`status ${facilityStatusBadge(f.status).cls}`}>
+                        {facilityStatusBadge(f.status).text}
                       </span>
                     </div>
                     <p>{f.description || 'No description provided.'}</p>
@@ -526,10 +653,22 @@ function App() {
                       <span>{f.type}</span>
                       <span>{f.location}</span>
                       <span>Cap: {f.capacity}</span>
+                      <span>Status: {f.status}</span>
+                      <span>Hours: {f.operatingHours || `${f.openingTime}-${f.closingTime}`}</span>
                       <span>
                         {f.openingTime} - {f.closingTime}
                       </span>
                     </div>
+                    {isAdmin && (
+                      <div className="row facility-actions">
+                        <button className="ghost" type="button" onClick={() => startEditFacility(f)}>
+                          Edit
+                        </button>
+                        <button className="danger" type="button" onClick={() => removeFacility(f.id)}>
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -538,7 +677,7 @@ function App() {
 
           {isAdmin && (
             <article className="panel">
-              <h2>Add Facility</h2>
+              <h2>{editingFacilityId ? 'Edit Facility' : 'Add Facility'}</h2>
               <form onSubmit={submitFacility} className="form-grid">
                 <input
                   placeholder="Facility Name"
@@ -578,22 +717,38 @@ function App() {
                   onChange={(e) => setFacilityForm({ ...facilityForm, closingTime: e.target.value })}
                   required
                 />
+                <input
+                  placeholder="Operating Hours (e.g. 08:00-20:00)"
+                  value={facilityForm.operatingHours}
+                  onChange={(e) => setFacilityForm({ ...facilityForm, operatingHours: e.target.value })}
+                  required
+                />
+                <select
+                  value={facilityForm.status}
+                  onChange={(e) => setFacilityForm({ ...facilityForm, status: e.target.value })}
+                  required
+                >
+                  <option value="ACTIVE">AVAILABLE</option>
+                  <option value="UNDER_MAINTENANCE">UNDER_MAINTENANCE</option>
+                  <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
+                </select>
                 <textarea
                   placeholder="Description"
                   value={facilityForm.description}
                   onChange={(e) => setFacilityForm({ ...facilityForm, description: e.target.value })}
                 />
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={facilityForm.available}
-                    onChange={(e) => setFacilityForm({ ...facilityForm, available: e.target.checked })}
-                  />
-                  Available for booking
-                </label>
+                <small>
+                  Booking availability is controlled by status. `AVAILABLE` allows bookings; `UNDER_MAINTENANCE` and
+                  `OUT_OF_SERVICE` block bookings.
+                </small>
                 <button className="primary" type="submit">
-                  Save Facility
+                  {editingFacilityId ? 'Update Facility' : 'Save Facility'}
                 </button>
+                {editingFacilityId && (
+                  <button className="ghost" type="button" onClick={resetFacilityForm}>
+                    Cancel Edit
+                  </button>
+                )}
               </form>
             </article>
           )}
@@ -619,18 +774,47 @@ function App() {
               </select>
               <label>Start Time</label>
               <input
-                type="datetime-local"
+                type="time"
                 value={bookingForm.startTime}
                 onChange={(e) => setBookingForm({ ...bookingForm, startTime: e.target.value })}
+                min={selectedBookingFacility?.openingTime || undefined}
+                max={selectedBookingFacility?.closingTime || undefined}
+                disabled={!bookingForm.facilityId}
                 required
               />
               <label>End Time</label>
               <input
-                type="datetime-local"
+                type="time"
                 value={bookingForm.endTime}
                 onChange={(e) => setBookingForm({ ...bookingForm, endTime: e.target.value })}
+                min={selectedBookingFacility?.openingTime || undefined}
+                max={selectedBookingFacility?.closingTime || undefined}
+                disabled={!bookingForm.facilityId}
                 required
               />
+              <label>Booking Date</label>
+              <input
+                type="date"
+                value={bookingForm.bookingDate}
+                onChange={(e) => setBookingForm({ ...bookingForm, bookingDate: e.target.value })}
+                min={todayDateValue()}
+                required
+              />
+              <label>Expected Attendees</label>
+              <input
+                type="number"
+                min="1"
+                value={bookingForm.expectedAttendees}
+                onChange={(e) => setBookingForm({ ...bookingForm, expectedAttendees: e.target.value })}
+                required
+              />
+              {selectedBookingFacility ? (
+                <small>
+                  This {selectedBookingFacility.type || 'facility'} can be used only from{' '}
+                  {selectedBookingFacility.openingTime} to {selectedBookingFacility.closingTime}. Please choose a start/end
+                  time within this range.
+                </small>
+              ) : null}
               <textarea
                 placeholder="Purpose"
                 value={bookingForm.purpose}
@@ -659,8 +843,9 @@ function App() {
                     </div>
                     <p>{b.purpose}</p>
                     <div className="meta">
-                      <span>{formatDate(b.startTime)}</span>
-                      <span>{formatDate(b.endTime)}</span>
+                      <span>Date: {b.bookingDate || '-'}</span>
+                      <span>Start: {b.startTime || '-'}</span>
+                      <span>End: {b.endTime || '-'}</span>
                     </div>
                     {b.decisionComment ? <small>Comment: {b.decisionComment}</small> : null}
                   </div>
@@ -685,8 +870,9 @@ function App() {
                         By {b.user?.fullName} ({b.user?.email})
                       </p>
                       <div className="meta">
-                        <span>{formatDate(b.startTime)}</span>
-                        <span>{formatDate(b.endTime)}</span>
+                        <span>Date: {b.bookingDate || '-'}</span>
+                        <span>Start: {b.startTime || '-'}</span>
+                        <span>End: {b.endTime || '-'}</span>
                       </div>
                       <input
                         placeholder="Admin comment"

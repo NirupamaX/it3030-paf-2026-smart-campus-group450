@@ -46,7 +46,7 @@ public class Facility {
     private ResourceStatus status = ResourceStatus.AVAILABLE;
 
     @Column(nullable = false)
-    private String operatingHours;
+    private String operatingHours = "08:00-20:00";
 
     @Column(nullable = false)
     private String openingTime;

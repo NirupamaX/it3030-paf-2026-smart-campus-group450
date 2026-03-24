@@ -11,8 +11,10 @@ import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.repository.BookingRepository;
 import jakarta.transaction.Transactional;
+import java.time.LocalTime;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
@@ -73,6 +75,8 @@ public class BookingService {
             );
         }
 
+        validateTimeWithinFacilityHours(facility, request.getStartTime(), request.getEndTime());
+
         List<Booking> conflicts = bookingRepository.findOverlappingBookings(
             facility.getId(),
             request.getBookingDate(),
@@ -127,6 +131,8 @@ public class BookingService {
             return false;
         }
 
+        validateTimeWithinFacilityHours(facility, startTime, endTime);
+
         List<Booking> conflicts = bookingRepository.findOverlappingBookings(
             resourceId,
             bookingDate,
@@ -136,6 +142,22 @@ public class BookingService {
         );
 
         return conflicts.isEmpty();
+    }
+
+    private void validateTimeWithinFacilityHours(Facility facility, LocalTime startTime, LocalTime endTime) {
+        try {
+            LocalTime opening = LocalTime.parse(facility.getOpeningTime());
+            LocalTime closing = LocalTime.parse(facility.getClosingTime());
+
+            if (startTime.isBefore(opening) || endTime.isAfter(closing)) {
+                throw new ResponseStatusException(
+                    BAD_REQUEST,
+                    "Booking time must be within facility operating hours: " + facility.getOpeningTime() + " to " + facility.getClosingTime()
+                );
+            }
+        } catch (DateTimeParseException ex) {
+            throw new ResponseStatusException(BAD_REQUEST, "Facility operating hours are misconfigured");
+        }
     }
 
     public List<Booking> listAll(BookingStatus status, LocalDate bookingDate) {
