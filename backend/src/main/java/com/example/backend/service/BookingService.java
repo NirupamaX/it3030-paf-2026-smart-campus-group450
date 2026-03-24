@@ -11,12 +11,14 @@ import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.repository.BookingRepository;
 import jakarta.transaction.Transactional;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -39,18 +41,22 @@ public class BookingService {
 
     @Transactional
     public Booking create(BookingRequest request, User user) {
-        if (request.getEndTime().isBefore(request.getStartTime()) || request.getEndTime().isEqual(request.getStartTime())) {
+        if (request.getEndTime().isBefore(request.getStartTime()) || request.getEndTime().equals(request.getStartTime())) {
             throw new ResponseStatusException(BAD_REQUEST, "End time must be after start time");
         }
 
-        Facility facility = facilityService.getById(request.getFacilityId());
+        if (request.getBookingDate().isBefore(LocalDate.now())) {
+            throw new ResponseStatusException(BAD_REQUEST, "Booking date cannot be in the past");
+        }
+
+        Facility facility = facilityService.getById(request.getResourceId());
         if (!facility.isAvailable() || facility.getStatus() == ResourceStatus.OUT_OF_SERVICE) {
             throw new ResponseStatusException(BAD_REQUEST, "Facility is currently not available for booking");
         }
 
         if (
-            request.getExpectedAttendees() != null &&
-            request.getExpectedAttendees() > facility.getCapacity()
+            request.getAttendees() != null &&
+            request.getAttendees() > facility.getCapacity()
         ) {
             throw new ResponseStatusException(
                 BAD_REQUEST,
@@ -58,69 +64,120 @@ public class BookingService {
             );
         }
 
-        List<Booking> conflicts = bookingRepository.findByFacilityIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan(
+        List<Booking> conflicts = bookingRepository.findOverlappingBookings(
             facility.getId(),
+            request.getBookingDate(),
             Set.of(BookingStatus.PENDING, BookingStatus.APPROVED),
-            request.getEndTime(),
-            request.getStartTime()
+            request.getStartTime(),
+            request.getEndTime()
         );
+
+        if (!conflicts.isEmpty()) {
+            throw new ResponseStatusException(
+                CONFLICT,
+                "Requested time slot overlaps with an existing approved or pending booking"
+            );
+        }
 
         Booking booking = new Booking();
         booking.setFacility(facility);
         booking.setUser(user);
+        booking.setBookingDate(request.getBookingDate());
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
         booking.setPurpose(request.getPurpose());
-        booking.setExpectedAttendees(request.getExpectedAttendees());
-        booking.setConflictFlag(!conflicts.isEmpty());
-        booking.setStatus(conflicts.isEmpty() ? BookingStatus.PENDING : BookingStatus.REJECTED);
+        booking.setAttendees(request.getAttendees());
+        booking.setStatus(BookingStatus.PENDING);
 
         Booking saved = bookingRepository.save(booking);
 
-        if (saved.getStatus() == BookingStatus.REJECTED) {
-            notificationService.create(
-                user,
-                NotificationType.BOOKING,
-                "Your booking for " + facility.getName() + " was rejected due to a time conflict."
-            );
-        } else {
-            notificationService.create(
-                user,
-                NotificationType.BOOKING,
-                "Booking request created for " + facility.getName() + " and awaiting review."
-            );
-        }
+        notificationService.create(
+            user,
+            NotificationType.BOOKING,
+            "Booking request created for " + facility.getName() + " and awaiting review."
+        );
 
         return saved;
     }
 
-    public List<Booking> listAll() {
+    public List<Booking> listAll(BookingStatus status, LocalDate bookingDate) {
+        if (status != null && bookingDate != null) {
+            return bookingRepository.findByStatusAndBookingDateOrderByCreatedAtDesc(status, bookingDate);
+        }
+
+        if (status != null) {
+            return bookingRepository.findByStatusOrderByCreatedAtDesc(status);
+        }
+
+        if (bookingDate != null) {
+            return bookingRepository.findByBookingDateOrderByCreatedAtDesc(bookingDate);
+        }
+
         return bookingRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    public List<Booking> listMine(User user) {
-        return bookingRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+    public List<Booking> listByUserId(Long userId, User actor) {
+        boolean isOwner = actor.getId().equals(userId);
+        boolean isAdmin = actor.getRole() == Role.ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only view your own bookings");
+        }
+
+        return bookingRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
     @Transactional
-    public Booking decide(Long id, BookingDecisionRequest request, User admin) {
+    public Booking updateStatus(Long id, BookingDecisionRequest request, User admin) {
+        if (admin.getRole() != Role.ADMIN) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can update booking status");
+        }
+
         Booking booking = bookingRepository
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
 
-        String decision = request.getDecision().trim().toUpperCase();
-        if (!decision.equals("APPROVED") && !decision.equals("REJECTED")) {
-            throw new ResponseStatusException(BAD_REQUEST, "Decision must be APPROVED or REJECTED");
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new ResponseStatusException(BAD_REQUEST, "Cancelled booking status cannot be changed");
         }
 
-        booking.setStatus(BookingStatus.valueOf(decision));
-        booking.setDecisionComment(request.getComment());
+        String nextStatusValue = request.getStatus().trim().toUpperCase();
+        if (!nextStatusValue.equals("APPROVED") && !nextStatusValue.equals("REJECTED")) {
+            throw new ResponseStatusException(BAD_REQUEST, "Status must be APPROVED or REJECTED");
+        }
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new ResponseStatusException(BAD_REQUEST, "Only pending bookings can be approved or rejected");
+        }
+
+        BookingStatus nextStatus = BookingStatus.valueOf(nextStatusValue);
+        if (nextStatus == BookingStatus.REJECTED && (request.getRejectionReason() == null || request.getRejectionReason().isBlank())) {
+            throw new ResponseStatusException(BAD_REQUEST, "Rejection reason is required when rejecting a booking");
+        }
+
+        if (nextStatus == BookingStatus.APPROVED) {
+            List<Booking> conflicts = bookingRepository.findOverlappingBookings(
+                booking.getFacility().getId(),
+                booking.getBookingDate(),
+                Set.of(BookingStatus.PENDING, BookingStatus.APPROVED),
+                booking.getStartTime(),
+                booking.getEndTime()
+            );
+
+            boolean hasOtherConflict = conflicts.stream().anyMatch(conflict -> !conflict.getId().equals(booking.getId()));
+            if (hasOtherConflict) {
+                throw new ResponseStatusException(CONFLICT, "Cannot approve booking due to a new scheduling conflict");
+            }
+        }
+
+        booking.setStatus(nextStatus);
+        booking.setRejectionReason(nextStatus == BookingStatus.REJECTED ? request.getRejectionReason().trim() : null);
 
         notificationService.create(
             booking.getUser(),
             NotificationType.BOOKING,
-            "Booking for " + booking.getFacility().getName() + " was " + decision +
-            (request.getComment() != null && !request.getComment().isBlank() ? ": " + request.getComment() : "")
+            nextStatus == BookingStatus.APPROVED
+                ? "Booking for " + booking.getFacility().getName() + " has been approved."
+                : "Booking for " + booking.getFacility().getName() + " has been rejected: " + booking.getRejectionReason()
         );
 
         return booking;
@@ -142,12 +199,13 @@ public class BookingService {
             throw new ResponseStatusException(BAD_REQUEST, "Booking is already cancelled");
         }
 
-        if (booking.getStartTime().isBefore(LocalDateTime.now())) {
+        LocalDateTime bookingStartDateTime = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+        if (bookingStartDateTime.isBefore(LocalDateTime.now())) {
             throw new ResponseStatusException(BAD_REQUEST, "Cannot cancel a booking that already started");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
-        booking.setDecisionComment(isOwner ? "Cancelled by user" : "Cancelled by admin");
+        booking.setRejectionReason(null);
 
         if (!isOwner) {
             notificationService.create(
