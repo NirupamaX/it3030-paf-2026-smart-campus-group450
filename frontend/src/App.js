@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 
 
+import LoginPage from './components/LoginPage/LoginPage';
 import { useEffect, useMemo, useState } from 'react';
 import {
   addIncidentComment,
@@ -645,101 +646,19 @@ function App() {
   };
 
   const authCard = (
-    <div className="auth-shell">
-      <div className="brand-card">
-        <h1>CampusX</h1>
-        <p className="slogan">Experience the future of education.</p>
-        <p>
-          Unified facilities, bookings, incident management, notifications, and role-based operations
-          for modern smart campuses.
-        </p>
-        <div className="brand-tags">
-          <span>Facilities</span>
-          <span>Bookings</span>
-          <span>Incidents</span>
-          <span>Role Security</span>
-        </div>
-        <a
-          className="oauth-btn"
-          href={`http://${window.location.hostname || 'localhost'}:8082/oauth2/authorization/google`}
-        >
-          Continue with Google OAuth
-        </a>
-      </div>
-
-      <div className="auth-box">
-        <div className="auth-switch">
-          <button
-            className={`btn ${mode === 'login' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setMode('login')}
-            type="button"
-          >
-            Login
-          </button>
-          <button
-            className={`btn ${mode === 'register' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setMode('register')}
-            type="button"
-          >
-            Register
-          </button>
-        </div>
-
-        {mode === 'login' ? (
-          <form onSubmit={onLogin}>
-            <label>Email</label>
-            <input className="input" type="email"
-              value={loginForm.email}
-              onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-              required
-            />
-            <label>Password</label>
-            <input className="input" type="password"
-              value={loginForm.password}
-              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-              required
-            />
-            <button className="btn btn-primary" type="submit" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={onRegister}>
-            <label>Full Name</label>
-            <input className="input" value={registerForm.fullName}
-              onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
-              required
-            />
-            <label>Email</label>
-            <input className="input" type="email"
-              value={registerForm.email}
-              onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-              required
-            />
-            <label>Password</label>
-            <input className="input" type="password"
-              value={registerForm.password}
-              onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-              required
-            />
-            <label>Role</label>
-            <select className="input" value={registerForm.role}
-              onChange={(e) => setRegisterForm({ ...registerForm, role: e.target.value })}
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            <button className="btn btn-primary" type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Account'}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
+    <LoginPage 
+        mode={mode} 
+        setMode={setMode} 
+        loginForm={loginForm} 
+        setLoginForm={setLoginForm} 
+        onLogin={onLogin} 
+        registerForm={registerForm} 
+        setRegisterForm={setRegisterForm} 
+        onRegister={onRegister} 
+        loading={loading} 
+        ROLES={ROLES} 
+    />
+);
 
   if (!token) {
     return (
