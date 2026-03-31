@@ -1,3 +1,4 @@
+import BookingSystem from './components/BookingSystem/BookingSystem';
 import './App.css';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -117,7 +118,7 @@ function App() {
     priority: 'MEDIUM',
     imageUrl: '',
   });
-  const [decisionForm, setDecisionForm] = useState({});
+  
   const [incidentAction, setIncidentAction] = useState({});
 
   const role = user?.role;
@@ -167,11 +168,15 @@ function App() {
   };
 
   const loadBookings = async () => {
-    const mine = await listMyBookings();
-    setBookings(mine);
-    if (isAdmin) {
+    try {
+      const mine = await listMyBookings();
+      setBookings(mine);
+    } catch(e) {}
+    try {
       const all = await listAllBookings();
       setAllBookings(all);
+    } catch (e) {
+      if(isAdmin) console.error("Error loading all bookings", e);
     }
   };
 
@@ -393,19 +398,7 @@ function App() {
     }
   };
 
-  const decideBooking = async (bookingId, decision) => {
-    clearMessages();
-    try {
-      await bookingDecision(bookingId, {
-        decision,
-        comment: decisionForm[bookingId] || '',
-      });
-      setInfo(`Booking ${decision.toLowerCase()}.`);
-      await loadBookings();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  
 
   const submitIncident = async (e) => {
     e.preventDefault();
@@ -756,145 +749,29 @@ function App() {
       )}
 
       {tab === 'Bookings' && (
-        <section className="panel-grid">
-          <article className="panel">
-            <h2>Create Booking</h2>
-            <form onSubmit={submitBooking} className="form-grid">
-              <select
-                value={bookingForm.facilityId}
-                onChange={(e) => setBookingForm({ ...bookingForm, facilityId: e.target.value })}
-                required
-              >
-                <option value="">Choose Facility</option>
-                {facilities.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} ({f.location})
-                  </option>
-                ))}
-              </select>
-              <label>Start Time</label>
-              <input
-                type="time"
-                value={bookingForm.startTime}
-                onChange={(e) => setBookingForm({ ...bookingForm, startTime: e.target.value })}
-                min={selectedBookingFacility?.openingTime || undefined}
-                max={selectedBookingFacility?.closingTime || undefined}
-                disabled={!bookingForm.facilityId}
-                required
+          <div className="fade-in">
+              <BookingSystem 
+                  facilities={facilities}
+                  userBookings={bookings}
+                  allBookings={allBookings}
+                  isAdmin={isAdmin}
+                  onSubmitBooking={async (params) => {
+                      try {
+                          await createBooking(params);
+                          setInfo('Booking request created successfully.');
+                          loadBookings();
+                      } catch (err) {
+                          setError(err.message);
+                      }
+                  }}
+                  onApproveBooking={async (id) => { try { await bookingDecision(id, { decision: 'APPROVED', comment: '' }); loadBookings(); } catch(e) { setError(e.message); } }}
+                  onRejectBooking={async (id) => {
+                      const reason = prompt('Reason for rejection:');
+                      if (reason) { try { await bookingDecision(id, { decision: 'REJECTED', comment: reason }); loadBookings(); } catch(e) { setError(e.message); } }
+                  }}
               />
-              <label>End Time</label>
-              <input
-                type="time"
-                value={bookingForm.endTime}
-                onChange={(e) => setBookingForm({ ...bookingForm, endTime: e.target.value })}
-                min={selectedBookingFacility?.openingTime || undefined}
-                max={selectedBookingFacility?.closingTime || undefined}
-                disabled={!bookingForm.facilityId}
-                required
-              />
-              <label>Booking Date</label>
-              <input
-                type="date"
-                value={bookingForm.bookingDate}
-                onChange={(e) => setBookingForm({ ...bookingForm, bookingDate: e.target.value })}
-                min={todayDateValue()}
-                required
-              />
-              <label>Expected Attendees</label>
-              <input
-                type="number"
-                min="1"
-                value={bookingForm.expectedAttendees}
-                onChange={(e) => setBookingForm({ ...bookingForm, expectedAttendees: e.target.value })}
-                required
-              />
-              {selectedBookingFacility ? (
-                <small>
-                  This {selectedBookingFacility.type || 'facility'} can be used only from{' '}
-                  {selectedBookingFacility.openingTime} to {selectedBookingFacility.closingTime}. Please choose a start/end
-                  time within this range.
-                </small>
-              ) : null}
-              <textarea
-                placeholder="Purpose"
-                value={bookingForm.purpose}
-                onChange={(e) => setBookingForm({ ...bookingForm, purpose: e.target.value })}
-                required
-              />
-              <button className="primary" type="submit">
-                Submit Booking
-              </button>
-            </form>
-          </article>
-
-          <article className="panel">
-            <h2>My Bookings</h2>
-            <div className="card-list">
-              {bookings.length === 0 ? (
-                <Empty text="No bookings yet." />
-              ) : (
-                bookings.map((b) => (
-                  <div className={`card ${statusTone(b.status)}`} key={b.id}>
-                    <div className="card-header">
-                      <h3>{b.facility?.name}</h3>
-                      <span className={`status ${b.status === 'APPROVED' ? 'ok' : b.status === 'PENDING' ? 'wait' : 'bad'}`}>
-                        {b.status}
-                      </span>
-                    </div>
-                    <p>{b.purpose}</p>
-                    <div className="meta">
-                      <span>Date: {b.bookingDate || '-'}</span>
-                      <span>Start: {b.startTime || '-'}</span>
-                      <span>End: {b.endTime || '-'}</span>
-                    </div>
-                    {b.decisionComment ? <small>Comment: {b.decisionComment}</small> : null}
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-
-          {isAdmin && (
-            <article className="panel">
-              <h2>Booking Moderation</h2>
-              <div className="card-list">
-                {allBookings.length === 0 ? (
-                  <Empty text="No booking requests." />
-                ) : (
-                  allBookings.map((b) => (
-                    <div className={`card ${statusTone(b.status)}`} key={b.id}>
-                      <h3>
-                        #{b.id} {b.facility?.name}
-                      </h3>
-                      <p>
-                        By {b.user?.fullName} ({b.user?.email})
-                      </p>
-                      <div className="meta">
-                        <span>Date: {b.bookingDate || '-'}</span>
-                        <span>Start: {b.startTime || '-'}</span>
-                        <span>End: {b.endTime || '-'}</span>
-                      </div>
-                      <input
-                        placeholder="Admin comment"
-                        value={decisionForm[b.id] || ''}
-                        onChange={(e) => setDecisionForm({ ...decisionForm, [b.id]: e.target.value })}
-                      />
-                      <div className="row">
-                        <button className="primary" type="button" onClick={() => decideBooking(b.id, 'APPROVED')}>
-                          Approve
-                        </button>
-                        <button className="danger" type="button" onClick={() => decideBooking(b.id, 'REJECTED')}>
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </article>
-          )}
-        </section>
-      )}
+          </div>
+        )}
 
       {tab === 'Incidents' && (
         <section className="panel-grid">
