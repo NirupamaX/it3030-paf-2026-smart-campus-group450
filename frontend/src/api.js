@@ -7,10 +7,14 @@ function getToken() {
 
 async function request(path, options = {}) {
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -65,8 +69,16 @@ export async function getMe() {
   return request('/auth/me');
 }
 
-export async function listFacilities(search = '') {
-  const suffix = search ? `?q=${encodeURIComponent(search)}` : '';
+export async function listFacilities(filters = {}) {
+  const params = new URLSearchParams();
+
+  if (filters.q) params.set('q', filters.q);
+  if (filters.type) params.set('type', filters.type);
+  if (filters.location) params.set('location', filters.location);
+  if (Number.isFinite(filters.capacityMin)) params.set('capacityMin', String(filters.capacityMin));
+  if (Number.isFinite(filters.capacityMax)) params.set('capacityMax', String(filters.capacityMax));
+
+  const suffix = params.toString() ? `?${params.toString()}` : '';
   return request(`/facilities${suffix}`);
 }
 
@@ -119,6 +131,16 @@ export async function createIncident(payload) {
   });
 }
 
+export async function uploadIncidentImages(files = []) {
+  const formData = new FormData();
+  files.forEach((file) => formData.append('files', file));
+
+  return request('/incidents/uploads', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export async function listMyIncidents() {
   return request('/incidents/mine');
 }
@@ -139,6 +161,34 @@ export async function assignIncident(id, payload) {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
+}
+
+export async function listIncidentComments(id) {
+  return request(`/incidents/${id}/comments`);
+}
+
+export async function addIncidentComment(id, payload) {
+  return request(`/incidents/${id}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateIncidentComment(id, commentId, payload) {
+  return request(`/incidents/${id}/comments/${commentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteIncidentComment(id, commentId) {
+  return request(`/incidents/${id}/comments/${commentId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function listIncidentAttachments(id) {
+  return request(`/incidents/${id}/attachments`);
 }
 
 export async function listNotifications() {

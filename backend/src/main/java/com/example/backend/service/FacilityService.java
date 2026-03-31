@@ -4,8 +4,10 @@ import com.example.backend.dto.FacilityRequest;
 import com.example.backend.model.Facility;
 import com.example.backend.repository.FacilityRepository;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
@@ -39,18 +41,53 @@ public class FacilityService {
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Facility not found"));
     }
 
-    public List<Facility> list(String q, String type) {
-        if (q != null && !q.isBlank()) {
-            return facilityRepository.findByNameContainingIgnoreCaseOrTypeContainingIgnoreCaseOrLocationContainingIgnoreCase(
-                q,
-                q,
-                q
-            );
+    public List<Facility> list(
+        String q,
+        String type,
+        String location,
+        Integer capacityMin,
+        Integer capacityMax
+    ) {
+        if (capacityMin != null && capacityMax != null && capacityMin > capacityMax) {
+            throw new ResponseStatusException(BAD_REQUEST, "capacityMin cannot be greater than capacityMax");
         }
-        if (type != null && !type.isBlank()) {
-            return facilityRepository.findByTypeIgnoreCase(type);
+
+        String normalizedQuery = normalize(q);
+        String normalizedType = normalize(type);
+        String normalizedLocation = normalize(location);
+
+        return facilityRepository
+            .findAll()
+            .stream()
+            .filter(facility ->
+                normalizedQuery == null ||
+                containsIgnoreCase(facility.getName(), normalizedQuery) ||
+                containsIgnoreCase(facility.getType(), normalizedQuery) ||
+                containsIgnoreCase(facility.getLocation(), normalizedQuery)
+            )
+            .filter(facility -> normalizedType == null || containsIgnoreCase(facility.getType(), normalizedType))
+            .filter(facility ->
+                normalizedLocation == null ||
+                containsIgnoreCase(facility.getLocation(), normalizedLocation)
+            )
+            .filter(facility -> capacityMin == null || facility.getCapacity() >= capacityMin)
+            .filter(facility -> capacityMax == null || facility.getCapacity() <= capacityMax)
+            .toList();
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
         }
-        return facilityRepository.findAll();
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private boolean containsIgnoreCase(String source, String target) {
+        if (source == null || target == null) {
+            return false;
+        }
+        return source.toLowerCase(Locale.ROOT).contains(target);
     }
 
     private void apply(Facility facility, FacilityRequest request) {

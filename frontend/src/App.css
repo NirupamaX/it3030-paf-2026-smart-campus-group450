@@ -246,6 +246,14 @@ button {
   align-items: center;
 }
 
+.facility-filter-row {
+  flex-wrap: wrap;
+}
+
+.facility-filter-row > * {
+  flex: 1 1 170px;
+}
+
 .facility-actions {
   margin-top: 10px;
   justify-content: flex-end;
@@ -262,6 +270,61 @@ button {
   padding: 12px;
   background: rgba(255, 255, 255, 0.72);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.incident-detail-actions {
+  margin-top: 10px;
+}
+
+.attachment-list {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attachment-chip {
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--accent-deep);
+  font-size: 0.83rem;
+}
+
+.comment-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.comment-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.admin-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.analytics-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.analytics-card small {
+  color: var(--muted);
+}
+
+.analytics-card h3 {
+  margin-top: 6px;
 }
 
 .card.tone-fresh {

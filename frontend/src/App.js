@@ -1,14 +1,18 @@
 import './App.css';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  addIncidentComment,
   assignIncident,
   bookingDecision,
   createBooking,
   deleteFacility,
   createFacility,
   createIncident,
+  deleteIncidentComment,
   getMe,
   getUnreadCount,
+  listIncidentAttachments,
+  listIncidentComments,
   listAllBookings,
   listAssignedIncidents,
   listFacilities,
@@ -20,11 +24,13 @@ import {
   login,
   markNotificationRead,
   register,
+  updateIncidentComment,
   updateIncidentStatus,
   updateFacility,
+  uploadIncidentImages,
 } from './api';
 
-const ROLES = ['STUDENT', 'TECHNICIAN', 'ADMIN'];
+const ROLES = ['USER', 'TECHNICIAN', 'ADMIN'];
 const TABS = ['Facilities', 'Bookings', 'Incidents', 'Notifications', 'Admin'];
 
 function Empty({ text }) {
@@ -77,18 +83,28 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   const [facilities, setFacilities] = useState([]);
-  const [facilitySearch, setFacilitySearch] = useState('');
+  const [facilityFilters, setFacilityFilters] = useState({
+    q: '',
+    type: '',
+    location: '',
+    capacityMin: '',
+    capacityMax: '',
+  });
   const [bookings, setBookings] = useState([]);
   const [allBookings, setAllBookings] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [assignedIncidents, setAssignedIncidents] = useState([]);
+  const [attachmentsByIncident, setAttachmentsByIncident] = useState({});
+  const [commentsByIncident, setCommentsByIncident] = useState({});
+  const [commentDraftByIncident, setCommentDraftByIncident] = useState({});
+  const [editingCommentByIncident, setEditingCommentByIncident] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const [users, setUsers] = useState([]);
   const [technicians, setTechnicians] = useState([]);
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({ fullName: '', email: '', password: '', role: 'STUDENT' });
+  const [registerForm, setRegisterForm] = useState({ fullName: '', email: '', password: '', role: 'USER' });
   const [facilityForm, setFacilityForm] = useState({
     name: '',
     type: '',
@@ -114,11 +130,29 @@ function App() {
     title: '',
     description: '',
     location: '',
+    category: 'ELECTRICAL',
     priority: 'MEDIUM',
-    imageUrl: '',
+    files: [],
   });
   const [decisionForm, setDecisionForm] = useState({});
   const [incidentAction, setIncidentAction] = useState({});
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    if (!oauthToken) {
+      return;
+    }
+
+    localStorage.setItem('campusx_token', oauthToken);
+    setToken(oauthToken);
+    setInfo('Signed in with Google successfully.');
+
+    params.delete('token');
+    const next = params.toString();
+    const newUrl = `${window.location.pathname}${next ? `?${next}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, []);
 
   const role = user?.role;
   const isAdmin = role === 'ADMIN';
@@ -144,6 +178,37 @@ function App() {
     [facilities.length, bookings.length, incidents.length, unread]
   );
 
+  const adminAnalytics = useMemo(() => {
+    const bookingPending = allBookings.filter((item) => item.status === 'PENDING').length;
+    const bookingApproved = allBookings.filter((item) => item.status === 'APPROVED').length;
+    const incidentOpen = assignedIncidents.filter((item) => ['OPEN', 'IN_PROGRESS'].includes(item.status)).length;
+    const incidentResolved = assignedIncidents.filter((item) => ['RESOLVED', 'CLOSED'].includes(item.status)).length;
+
+    return [
+      { label: 'Pending Bookings', value: bookingPending },
+      { label: 'Approved Bookings', value: bookingApproved },
+      { label: 'Open Incidents', value: incidentOpen },
+      { label: 'Resolved Incidents', value: incidentResolved },
+    ];
+  }, [allBookings, assignedIncidents]);
+
+  const incidentSlaTimers = useMemo(() => {
+    return assignedIncidents
+      .filter((item) => ['OPEN', 'IN_PROGRESS'].includes(item.status) && item.createdAt)
+      .map((item) => {
+        const created = new Date(item.createdAt).getTime();
+        const now = Date.now();
+        const elapsedHours = Math.max(0, Math.floor((now - created) / (1000 * 60 * 60)));
+        return {
+          id: item.id,
+          title: item.title,
+          status: item.status,
+          elapsedHours,
+          breached: elapsedHours >= 24,
+        };
+      });
+  }, [assignedIncidents]);
+
   const clearMessages = () => {
     setError('');
     setInfo('');
@@ -161,8 +226,16 @@ function App() {
     }
   };
 
-  const loadFacilities = async (search = '') => {
-    const data = await listFacilities(search);
+  const loadFacilities = async (filters = facilityFilters) => {
+    const payload = {
+      q: filters.q?.trim() || undefined,
+      type: filters.type?.trim() || undefined,
+      location: filters.location?.trim() || undefined,
+      capacityMin: filters.capacityMin === '' ? undefined : Number(filters.capacityMin),
+      capacityMax: filters.capacityMax === '' ? undefined : Number(filters.capacityMax),
+    };
+
+    const data = await listFacilities(payload);
     setFacilities(data);
   };
 
@@ -204,7 +277,7 @@ function App() {
     clearMessages();
     try {
       await loadAuthData();
-      await loadFacilities(facilitySearch);
+      await loadFacilities(facilityFilters);
       await loadBookings();
       await loadIncidents();
       await loadNotifications();
@@ -218,6 +291,21 @@ function App() {
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      loadNotifications().catch(() => {
+        // Polling should not interrupt user flow if a request fails once.
+      });
+    }, 30000);
+
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -283,7 +371,7 @@ function App() {
         setInfo('Facility added.');
       }
       resetFacilityForm();
-      await loadFacilities(facilitySearch);
+      await loadFacilities(facilityFilters);
     } catch (err) {
       setError(err.message);
     }
@@ -332,7 +420,7 @@ function App() {
       if (editingFacilityId === facilityId) {
         resetFacilityForm();
       }
-      await loadFacilities(facilitySearch);
+      await loadFacilities(facilityFilters);
     } catch (err) {
       setError(err.message);
     }
@@ -411,11 +499,93 @@ function App() {
     e.preventDefault();
     clearMessages();
     try {
-      await createIncident(incidentForm);
+      let imageUrls = [];
+      if (incidentForm.files.length > 0) {
+        const uploadPayload = await uploadIncidentImages(incidentForm.files);
+        imageUrls = uploadPayload?.files || [];
+      }
+
+      await createIncident({
+        title: incidentForm.title,
+        description: incidentForm.description,
+        location: incidentForm.location,
+        category: incidentForm.category,
+        priority: incidentForm.priority,
+        imageUrls,
+      });
       setInfo('Incident reported.');
-      setIncidentForm({ title: '', description: '', location: '', priority: 'MEDIUM', imageUrl: '' });
+      setIncidentForm({
+        title: '',
+        description: '',
+        location: '',
+        category: 'ELECTRICAL',
+        priority: 'MEDIUM',
+        files: [],
+      });
       await loadIncidents();
       await loadNotifications();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const loadIncidentDetails = async (incidentId) => {
+    try {
+      const [comments, attachments] = await Promise.all([
+        listIncidentComments(incidentId),
+        listIncidentAttachments(incidentId),
+      ]);
+      setCommentsByIncident((prev) => ({ ...prev, [incidentId]: comments }));
+      setAttachmentsByIncident((prev) => ({ ...prev, [incidentId]: attachments }));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const submitIncidentComment = async (incidentId) => {
+    clearMessages();
+    const draft = (commentDraftByIncident[incidentId] || '').trim();
+    if (!draft) {
+      setError('Comment cannot be empty.');
+      return;
+    }
+
+    try {
+      await addIncidentComment(incidentId, { content: draft });
+      setCommentDraftByIncident((prev) => ({ ...prev, [incidentId]: '' }));
+      await loadIncidentDetails(incidentId);
+      await loadNotifications();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const saveEditedComment = async (incidentId, commentId) => {
+    clearMessages();
+    const content = (editingCommentByIncident[commentId] || '').trim();
+    if (!content) {
+      setError('Comment cannot be empty.');
+      return;
+    }
+
+    try {
+      await updateIncidentComment(incidentId, commentId, { content });
+      setEditingCommentByIncident((prev) => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
+      await loadIncidentDetails(incidentId);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const removeComment = async (incidentId, commentId) => {
+    clearMessages();
+    try {
+      await deleteIncidentComment(incidentId, commentId);
+      await loadIncidentDetails(incidentId);
     } catch (err) {
       setError(err.message);
     }
@@ -482,7 +652,10 @@ function App() {
           <span>Incidents</span>
           <span>Role Security</span>
         </div>
-        <a className="oauth-btn" href="http://localhost:8080/oauth2/authorization/google">
+        <a
+          className="oauth-btn"
+          href={`http://${window.location.hostname || 'localhost'}:8082/oauth2/authorization/google`}
+        >
           Continue with Google OAuth
         </a>
       </div>
@@ -626,14 +799,49 @@ function App() {
         <section className="panel-grid">
           <article className="panel">
             <h2>Facilities Catalogue</h2>
-            <div className="row">
+            <div className="row facility-filter-row">
               <input
                 placeholder="Search by name, type, location"
-                value={facilitySearch}
-                onChange={(e) => setFacilitySearch(e.target.value)}
+                value={facilityFilters.q}
+                onChange={(e) => setFacilityFilters({ ...facilityFilters, q: e.target.value })}
               />
-              <button className="ghost" onClick={() => loadFacilities(facilitySearch)} type="button">
+              <input
+                placeholder="Type"
+                value={facilityFilters.type}
+                onChange={(e) => setFacilityFilters({ ...facilityFilters, type: e.target.value })}
+              />
+              <input
+                placeholder="Location"
+                value={facilityFilters.location}
+                onChange={(e) => setFacilityFilters({ ...facilityFilters, location: e.target.value })}
+              />
+              <input
+                type="number"
+                min="0"
+                placeholder="Min Capacity"
+                value={facilityFilters.capacityMin}
+                onChange={(e) => setFacilityFilters({ ...facilityFilters, capacityMin: e.target.value })}
+              />
+              <input
+                type="number"
+                min="0"
+                placeholder="Max Capacity"
+                value={facilityFilters.capacityMax}
+                onChange={(e) => setFacilityFilters({ ...facilityFilters, capacityMax: e.target.value })}
+              />
+              <button className="ghost" onClick={() => loadFacilities(facilityFilters)} type="button">
                 Search
+              </button>
+              <button
+                className="ghost"
+                type="button"
+                onClick={() => {
+                  const reset = { q: '', type: '', location: '', capacityMin: '', capacityMax: '' };
+                  setFacilityFilters(reset);
+                  loadFacilities(reset);
+                }}
+              >
+                Reset
               </button>
             </div>
             <div className="card-list">
@@ -914,6 +1122,17 @@ function App() {
                 required
               />
               <select
+                value={incidentForm.category}
+                onChange={(e) => setIncidentForm({ ...incidentForm, category: e.target.value })}
+              >
+                <option value="ELECTRICAL">ELECTRICAL</option>
+                <option value="NETWORK">NETWORK</option>
+                <option value="PLUMBING">PLUMBING</option>
+                <option value="HARDWARE">HARDWARE</option>
+                <option value="SOFTWARE">SOFTWARE</option>
+                <option value="OTHER">OTHER</option>
+              </select>
+              <select
                 value={incidentForm.priority}
                 onChange={(e) => setIncidentForm({ ...incidentForm, priority: e.target.value })}
               >
@@ -923,10 +1142,15 @@ function App() {
                 <option value="CRITICAL">CRITICAL</option>
               </select>
               <input
-                placeholder="Image URL (optional)"
-                value={incidentForm.imageUrl}
-                onChange={(e) => setIncidentForm({ ...incidentForm, imageUrl: e.target.value })}
+                type="file"
+                multiple
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []).slice(0, 3);
+                  setIncidentForm({ ...incidentForm, files });
+                }}
               />
+              <small>Upload up to 3 images (JPG, PNG, WEBP, max 5MB each).</small>
               <textarea
                 placeholder="Description"
                 value={incidentForm.description}
@@ -960,6 +1184,107 @@ function App() {
                       <span>Tech: {i.technician?.fullName || 'Unassigned'}</span>
                     </div>
                     {i.resolutionNote ? <small>Resolution: {i.resolutionNote}</small> : null}
+                    <div className="incident-detail-actions">
+                      <button className="ghost" type="button" onClick={() => loadIncidentDetails(i.id)}>
+                        Load Comments & Attachments
+                      </button>
+                    </div>
+
+                    {attachmentsByIncident[i.id]?.length ? (
+                      <div className="attachment-list">
+                        {attachmentsByIncident[i.id].map((attachment) => (
+                          <a
+                            key={attachment.id}
+                            href={`${process.env.REACT_APP_API_BASE?.replace('/api', '') || `http://${window.location.hostname || 'localhost'}:8082`}${attachment.fileUrl}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="attachment-chip"
+                          >
+                            Attachment #{attachment.id}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="comment-list">
+                      {(commentsByIncident[i.id] || []).map((comment) => {
+                        const isOwner = Number(comment.author?.id) === Number(user?.id);
+                        const isEditing = editingCommentByIncident[comment.id] !== undefined;
+                        return (
+                          <div className="comment-item" key={comment.id}>
+                            <strong>{comment.author?.fullName}</strong>
+                            {isEditing ? (
+                              <>
+                                <textarea
+                                  value={editingCommentByIncident[comment.id]}
+                                  onChange={(e) =>
+                                    setEditingCommentByIncident((prev) => ({
+                                      ...prev,
+                                      [comment.id]: e.target.value,
+                                    }))
+                                  }
+                                />
+                                <div className="row">
+                                  <button className="primary" type="button" onClick={() => saveEditedComment(i.id, comment.id)}>
+                                    Save
+                                  </button>
+                                  <button
+                                    className="ghost"
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingCommentByIncident((prev) => {
+                                        const next = { ...prev };
+                                        delete next[comment.id];
+                                        return next;
+                                      })
+                                    }
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <p>{comment.content}</p>
+                            )}
+                            <small>{formatDate(comment.createdAt)}</small>
+                            {isOwner && !isEditing ? (
+                              <div className="row">
+                                <button
+                                  className="ghost"
+                                  type="button"
+                                  onClick={() =>
+                                    setEditingCommentByIncident((prev) => ({
+                                      ...prev,
+                                      [comment.id]: comment.content,
+                                    }))
+                                  }
+                                >
+                                  Edit
+                                </button>
+                                <button className="danger" type="button" onClick={() => removeComment(i.id, comment.id)}>
+                                  Delete
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="row">
+                      <input
+                        placeholder="Add a comment"
+                        value={commentDraftByIncident[i.id] || ''}
+                        onChange={(e) =>
+                          setCommentDraftByIncident((prev) => ({
+                            ...prev,
+                            [i.id]: e.target.value,
+                          }))
+                        }
+                      />
+                      <button className="primary" type="button" onClick={() => submitIncidentComment(i.id)}>
+                        Comment
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -1079,6 +1404,41 @@ function App() {
 
       {tab === 'Admin' && isAdmin && (
         <section className="panel-grid single">
+          <article className="panel">
+            <h2>Admin Analytics</h2>
+            <div className="admin-analytics-grid">
+              {adminAnalytics.map((item) => (
+                <div key={item.label} className="analytics-card">
+                  <small>{item.label}</small>
+                  <h3>{item.value}</h3>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel">
+            <h2>Incident SLA Timer (24h target)</h2>
+            {incidentSlaTimers.length === 0 ? (
+              <Empty text="No active incident SLA timers." />
+            ) : (
+              <div className="card-list">
+                {incidentSlaTimers.map((item) => (
+                  <div className={`card ${item.breached ? 'tone-alert' : 'tone-warm'}`} key={item.id}>
+                    <div className="card-header">
+                      <h3>
+                        #{item.id} {item.title}
+                      </h3>
+                      <span className={`status ${item.breached ? 'bad' : 'wait'}`}>
+                        {item.elapsedHours}h elapsed
+                      </span>
+                    </div>
+                    <small>Status: {item.status}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+
           <article className="panel">
             <h2>Role Management</h2>
             <div className="table-wrap">
