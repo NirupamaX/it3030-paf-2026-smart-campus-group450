@@ -1,4 +1,10 @@
 import './App.css';
+import { 
+  LayoutDashboard, Building2, Calendar as CalIcon, AlertTriangle, 
+  Bell, Shield, LogOut, RefreshCw, AlertCircle, CheckCircle, Menu
+} from 'lucide-react';
+
+
 import { useEffect, useMemo, useState } from 'react';
 import {
   addIncidentComment,
@@ -75,6 +81,7 @@ function facilityStatusBadge(status) {
 
 function App() {
   const [mode, setMode] = useState('login');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tab, setTab] = useState('Facilities');
   const [token, setToken] = useState(localStorage.getItem('campusx_token'));
   const [user, setUser] = useState(null);
@@ -660,17 +667,17 @@ function App() {
         </a>
       </div>
 
-      <div className="auth-card">
+      <div className="auth-box">
         <div className="auth-switch">
           <button
-            className={mode === 'login' ? 'active' : ''}
+            className={`btn ${mode === 'login' ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setMode('login')}
             type="button"
           >
             Login
           </button>
           <button
-            className={mode === 'register' ? 'active' : ''}
+            className={`btn ${mode === 'register' ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setMode('register')}
             type="button"
           >
@@ -681,48 +688,42 @@ function App() {
         {mode === 'login' ? (
           <form onSubmit={onLogin}>
             <label>Email</label>
-            <input
-              type="email"
+            <input className="input" type="email"
               value={loginForm.email}
               onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
               required
             />
             <label>Password</label>
-            <input
-              type="password"
+            <input className="input" type="password"
               value={loginForm.password}
               onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
               required
             />
-            <button className="primary" type="submit" disabled={loading}>
+            <button className="btn btn-primary" type="submit" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         ) : (
           <form onSubmit={onRegister}>
             <label>Full Name</label>
-            <input
-              value={registerForm.fullName}
+            <input className="input" value={registerForm.fullName}
               onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
               required
             />
             <label>Email</label>
-            <input
-              type="email"
+            <input className="input" type="email"
               value={registerForm.email}
               onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
               required
             />
             <label>Password</label>
-            <input
-              type="password"
+            <input className="input" type="password"
               value={registerForm.password}
               onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
               required
             />
             <label>Role</label>
-            <select
-              value={registerForm.role}
+            <select className="input" value={registerForm.role}
               onChange={(e) => setRegisterForm({ ...registerForm, role: e.target.value })}
             >
               {ROLES.map((r) => (
@@ -731,7 +732,7 @@ function App() {
                 </option>
               ))}
             </select>
-            <button className="primary" type="submit" disabled={loading}>
+            <button className="btn btn-primary" type="submit" disabled={loading}>
               {loading ? 'Creating...' : 'Create Account'}
             </button>
           </form>
@@ -742,98 +743,128 @@ function App() {
 
   if (!token) {
     return (
-      <main className="app">
-        {error ? <div className="alert error">{error}</div> : null}
-        {info ? <div className="alert success">{info}</div> : null}
+      <main className="auth-wrapper">
+        {error && <div className="alert error toast"><AlertCircle size={18}/> {error}</div>}
+        {info && <div className="alert success toast"><CheckCircle size={18}/> {info}</div>}
         {authCard}
       </main>
     );
   }
 
+  
+  const getTabIcon = (t) => {
+    switch (t) {
+      case 'Facilities': return <Building2 size={18} />;
+      case 'Bookings': return <CalIcon size={18} />;
+      case 'Incidents': return <AlertTriangle size={18} />;
+      case 'Notifications': return <Bell size={18} />;
+      case 'Admin': return <Shield size={18} />;
+      default: return <LayoutDashboard size={18} />;
+    }
+  };
+
+
   return (
-    <main className="app">
-      <header className="topbar">
-        <div className="topbar-copy">
-          <h1>CampusX</h1>
-          <p>Smart operations cockpit for your entire campus lifecycle.</p>
+    <div className="layout-container">
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-brand">
+          <LayoutDashboard size={24} />
+          <h2>CampusX</h2>
         </div>
-        <div className="top-actions">
-          <span className="role-pill">{user?.role || '-'}</span>
-          <button onClick={loadAll} className="ghost" type="button">
-            Refresh
-          </button>
-          <button onClick={onLogout} className="ghost" type="button">
-            Logout
-          </button>
-        </div>
-      </header>
+        <nav className="sidebar-nav">
+          {visibleTabs.map((item) => (
+            <button
+              key={item}
+              className={`nav-item ${tab === item ? 'active' : ''}`}
+              onClick={() => { setTab(item); setSidebarOpen(false); }}
+              type="button"
+            >
+              <div className="nav-item-content">
+                {getTabIcon(item)}
+                {item}
+              </div>
+              {item === 'Notifications' && unread > 0 ? (
+                <span className="badge badge-red">{unread}</span>
+              ) : null}
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-      {error ? <div className="alert error">{error}</div> : null}
-      {info ? <div className="alert success">{info}</div> : null}
+      <main className="main-wrapper">
+        <header className="topbar">
+          <div className="topbar-left">
+            <button className="btn btn-ghost d-sm-block" style={{ display: typeof window !== 'undefined' && window.innerWidth <= 768 ? 'block' : 'none'}} onClick={() => setSidebarOpen(true)}>
+              <Menu size={20} />
+            </button>
+            <h3 style={{ margin: 0, fontWeight: 600 }}>{tab}</h3>
+          </div>
+          <div className="topbar-right">
+            <button onClick={loadAll} className="btn btn-ghost" type="button" title="Refresh">
+              <RefreshCw size={18} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '8px', borderLeft: '1px solid var(--border-color)' }}>
+              <span className="badge badge-indigo">{user?.role || '-'}</span>
+              <button onClick={onLogout} className="btn btn-ghost" style={{color: 'var(--danger)'}} type="button">
+                <LogOut size={18} />
+              </button>
+            </div>
+          </div>
+        </header>
 
-      <section className="insight-strip">
-        {dashboardStats.map((item) => (
-          <article className="insight-card" key={item.label}>
-            <p>{item.label}</p>
-            <h2>{item.value}</h2>
-            <small>{item.hint}</small>
-          </article>
-        ))}
-      </section>
+        <div className="page-content-scroll">
+          {error && <div className="alert error toast"><AlertCircle size={18}/> {error}</div>}
+          {info && <div className="alert success toast"><CheckCircle size={18}/> {info}</div>}
 
-      <nav className="tabs">
-        {visibleTabs.map((item) => (
-          <button
-            key={item}
-            className={tab === item ? 'active' : ''}
-            onClick={() => setTab(item)}
-            type="button"
-          >
-            {item}
-            {item === 'Notifications' ? <span className="badge">{unread}</span> : null}
-          </button>
-        ))}
-      </nav>
+          {/* Quick Analytics Strip directly above tabs content */}
+          {tab === 'Facilities' && (
+             <section className="analytics-grid">
+               {dashboardStats.map((item) => (
+                 <article className="card analytic-card" key={item.label}>
+                   <p className="analytic-title">{item.label}</p>
+                   <div className="analytic-value">{item.value}</div>
+                   <span className="analytic-hint">{item.hint}</span>
+                 </article>
+               ))}
+             </section>
+          )}
+
+
 
       {tab === 'Facilities' && (
         <section className="panel-grid">
           <article className="panel">
             <h2>Facilities Catalogue</h2>
             <div className="row facility-filter-row">
-              <input
-                placeholder="Search by name, type, location"
+              <input className="input" placeholder="Search by name, type, location"
                 value={facilityFilters.q}
                 onChange={(e) => setFacilityFilters({ ...facilityFilters, q: e.target.value })}
               />
-              <input
-                placeholder="Type"
+              <input className="input" placeholder="Type"
                 value={facilityFilters.type}
                 onChange={(e) => setFacilityFilters({ ...facilityFilters, type: e.target.value })}
               />
-              <input
-                placeholder="Location"
+              <input className="input" placeholder="Location"
                 value={facilityFilters.location}
                 onChange={(e) => setFacilityFilters({ ...facilityFilters, location: e.target.value })}
               />
-              <input
-                type="number"
+              <input className="input" type="number"
                 min="0"
                 placeholder="Min Capacity"
                 value={facilityFilters.capacityMin}
                 onChange={(e) => setFacilityFilters({ ...facilityFilters, capacityMin: e.target.value })}
               />
-              <input
-                type="number"
+              <input className="input" type="number"
                 min="0"
                 placeholder="Max Capacity"
                 value={facilityFilters.capacityMax}
                 onChange={(e) => setFacilityFilters({ ...facilityFilters, capacityMax: e.target.value })}
               />
-              <button className="ghost" onClick={() => loadFacilities(facilityFilters)} type="button">
+              <button className="btn btn-ghost" onClick={() => loadFacilities(facilityFilters)} type="button">
                 Search
               </button>
               <button
-                className="ghost"
+                className="btn btn-ghost"
                 type="button"
                 onClick={() => {
                   const reset = { q: '', type: '', location: '', capacityMin: '', capacityMax: '' };
@@ -869,7 +900,7 @@ function App() {
                     </div>
                     {isAdmin && (
                       <div className="row facility-actions">
-                        <button className="ghost" type="button" onClick={() => startEditFacility(f)}>
+                        <button className="btn btn-ghost" type="button" onClick={() => startEditFacility(f)}>
                           Edit
                         </button>
                         <button className="danger" type="button" onClick={() => removeFacility(f.id)}>
@@ -887,52 +918,44 @@ function App() {
             <article className="panel">
               <h2>{editingFacilityId ? 'Edit Facility' : 'Add Facility'}</h2>
               <form onSubmit={submitFacility} className="form-grid">
-                <input
-                  placeholder="Facility Name"
+                <input className="input" placeholder="Facility Name"
                   value={facilityForm.name}
                   onChange={(e) => setFacilityForm({ ...facilityForm, name: e.target.value })}
                   required
                 />
-                <input
-                  placeholder="Type"
+                <input className="input" placeholder="Type"
                   value={facilityForm.type}
                   onChange={(e) => setFacilityForm({ ...facilityForm, type: e.target.value })}
                   required
                 />
-                <input
-                  placeholder="Location"
+                <input className="input" placeholder="Location"
                   value={facilityForm.location}
                   onChange={(e) => setFacilityForm({ ...facilityForm, location: e.target.value })}
                   required
                 />
-                <input
-                  type="number"
+                <input className="input" type="number"
                   min="1"
                   placeholder="Capacity"
                   value={facilityForm.capacity}
                   onChange={(e) => setFacilityForm({ ...facilityForm, capacity: e.target.value })}
                   required
                 />
-                <input
-                  placeholder="Opening Time (HH:mm)"
+                <input className="input" placeholder="Opening Time (HH:mm)"
                   value={facilityForm.openingTime}
                   onChange={(e) => setFacilityForm({ ...facilityForm, openingTime: e.target.value })}
                   required
                 />
-                <input
-                  placeholder="Closing Time (HH:mm)"
+                <input className="input" placeholder="Closing Time (HH:mm)"
                   value={facilityForm.closingTime}
                   onChange={(e) => setFacilityForm({ ...facilityForm, closingTime: e.target.value })}
                   required
                 />
-                <input
-                  placeholder="Operating Hours (e.g. 08:00-20:00)"
+                <input className="input" placeholder="Operating Hours (e.g. 08:00-20:00)"
                   value={facilityForm.operatingHours}
                   onChange={(e) => setFacilityForm({ ...facilityForm, operatingHours: e.target.value })}
                   required
                 />
-                <select
-                  value={facilityForm.status}
+                <select className="input" value={facilityForm.status}
                   onChange={(e) => setFacilityForm({ ...facilityForm, status: e.target.value })}
                   required
                 >
@@ -940,8 +963,7 @@ function App() {
                   <option value="UNDER_MAINTENANCE">UNDER_MAINTENANCE</option>
                   <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
                 </select>
-                <textarea
-                  placeholder="Description"
+                <textarea className="input" placeholder="Description"
                   value={facilityForm.description}
                   onChange={(e) => setFacilityForm({ ...facilityForm, description: e.target.value })}
                 />
@@ -949,11 +971,11 @@ function App() {
                   Booking availability is controlled by status. `AVAILABLE` allows bookings; `UNDER_MAINTENANCE` and
                   `OUT_OF_SERVICE` block bookings.
                 </small>
-                <button className="primary" type="submit">
+                <button className="btn btn-primary" type="submit">
                   {editingFacilityId ? 'Update Facility' : 'Save Facility'}
                 </button>
                 {editingFacilityId && (
-                  <button className="ghost" type="button" onClick={resetFacilityForm}>
+                  <button className="btn btn-ghost" type="button" onClick={resetFacilityForm}>
                     Cancel Edit
                   </button>
                 )}
@@ -968,8 +990,7 @@ function App() {
           <article className="panel">
             <h2>Create Booking</h2>
             <form onSubmit={submitBooking} className="form-grid">
-              <select
-                value={bookingForm.facilityId}
+              <select className="input" value={bookingForm.facilityId}
                 onChange={(e) => setBookingForm({ ...bookingForm, facilityId: e.target.value })}
                 required
               >
@@ -981,8 +1002,7 @@ function App() {
                 ))}
               </select>
               <label>Start Time</label>
-              <input
-                type="time"
+              <input className="input" type="time"
                 value={bookingForm.startTime}
                 onChange={(e) => setBookingForm({ ...bookingForm, startTime: e.target.value })}
                 min={selectedBookingFacility?.openingTime || undefined}
@@ -991,8 +1011,7 @@ function App() {
                 required
               />
               <label>End Time</label>
-              <input
-                type="time"
+              <input className="input" type="time"
                 value={bookingForm.endTime}
                 onChange={(e) => setBookingForm({ ...bookingForm, endTime: e.target.value })}
                 min={selectedBookingFacility?.openingTime || undefined}
@@ -1001,16 +1020,14 @@ function App() {
                 required
               />
               <label>Booking Date</label>
-              <input
-                type="date"
+              <input className="input" type="date"
                 value={bookingForm.bookingDate}
                 onChange={(e) => setBookingForm({ ...bookingForm, bookingDate: e.target.value })}
                 min={todayDateValue()}
                 required
               />
               <label>Expected Attendees</label>
-              <input
-                type="number"
+              <input className="input" type="number"
                 min="1"
                 value={bookingForm.expectedAttendees}
                 onChange={(e) => setBookingForm({ ...bookingForm, expectedAttendees: e.target.value })}
@@ -1023,13 +1040,12 @@ function App() {
                   time within this range.
                 </small>
               ) : null}
-              <textarea
-                placeholder="Purpose"
+              <textarea className="input" placeholder="Purpose"
                 value={bookingForm.purpose}
                 onChange={(e) => setBookingForm({ ...bookingForm, purpose: e.target.value })}
                 required
               />
-              <button className="primary" type="submit">
+              <button className="btn btn-primary" type="submit">
                 Submit Booking
               </button>
             </form>
@@ -1082,13 +1098,12 @@ function App() {
                         <span>Start: {b.startTime || '-'}</span>
                         <span>End: {b.endTime || '-'}</span>
                       </div>
-                      <input
-                        placeholder="Admin comment"
+                      <input className="input" placeholder="Admin comment"
                         value={decisionForm[b.id] || ''}
                         onChange={(e) => setDecisionForm({ ...decisionForm, [b.id]: e.target.value })}
                       />
                       <div className="row">
-                        <button className="primary" type="button" onClick={() => decideBooking(b.id, 'APPROVED')}>
+                        <button className="btn btn-primary" type="button" onClick={() => decideBooking(b.id, 'APPROVED')}>
                           Approve
                         </button>
                         <button className="danger" type="button" onClick={() => decideBooking(b.id, 'REJECTED')}>
@@ -1109,20 +1124,17 @@ function App() {
           <article className="panel">
             <h2>Report Incident</h2>
             <form onSubmit={submitIncident} className="form-grid">
-              <input
-                placeholder="Title"
+              <input className="input" placeholder="Title"
                 value={incidentForm.title}
                 onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })}
                 required
               />
-              <input
-                placeholder="Location"
+              <input className="input" placeholder="Location"
                 value={incidentForm.location}
                 onChange={(e) => setIncidentForm({ ...incidentForm, location: e.target.value })}
                 required
               />
-              <select
-                value={incidentForm.category}
+              <select className="input" value={incidentForm.category}
                 onChange={(e) => setIncidentForm({ ...incidentForm, category: e.target.value })}
               >
                 <option value="ELECTRICAL">ELECTRICAL</option>
@@ -1132,8 +1144,7 @@ function App() {
                 <option value="SOFTWARE">SOFTWARE</option>
                 <option value="OTHER">OTHER</option>
               </select>
-              <select
-                value={incidentForm.priority}
+              <select className="input" value={incidentForm.priority}
                 onChange={(e) => setIncidentForm({ ...incidentForm, priority: e.target.value })}
               >
                 <option value="LOW">LOW</option>
@@ -1141,8 +1152,7 @@ function App() {
                 <option value="HIGH">HIGH</option>
                 <option value="CRITICAL">CRITICAL</option>
               </select>
-              <input
-                type="file"
+              <input className="input" type="file"
                 multiple
                 accept="image/png,image/jpeg,image/webp"
                 onChange={(e) => {
@@ -1151,13 +1161,12 @@ function App() {
                 }}
               />
               <small>Upload up to 3 images (JPG, PNG, WEBP, max 5MB each).</small>
-              <textarea
-                placeholder="Description"
+              <textarea className="input" placeholder="Description"
                 value={incidentForm.description}
                 onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })}
                 required
               />
-              <button className="primary" type="submit">
+              <button className="btn btn-primary" type="submit">
                 Submit Ticket
               </button>
             </form>
@@ -1185,7 +1194,7 @@ function App() {
                     </div>
                     {i.resolutionNote ? <small>Resolution: {i.resolutionNote}</small> : null}
                     <div className="incident-detail-actions">
-                      <button className="ghost" type="button" onClick={() => loadIncidentDetails(i.id)}>
+                      <button className="btn btn-ghost" type="button" onClick={() => loadIncidentDetails(i.id)}>
                         Load Comments & Attachments
                       </button>
                     </div>
@@ -1215,8 +1224,7 @@ function App() {
                             <strong>{comment.author?.fullName}</strong>
                             {isEditing ? (
                               <>
-                                <textarea
-                                  value={editingCommentByIncident[comment.id]}
+                                <textarea className="input" value={editingCommentByIncident[comment.id]}
                                   onChange={(e) =>
                                     setEditingCommentByIncident((prev) => ({
                                       ...prev,
@@ -1225,11 +1233,11 @@ function App() {
                                   }
                                 />
                                 <div className="row">
-                                  <button className="primary" type="button" onClick={() => saveEditedComment(i.id, comment.id)}>
+                                  <button className="btn btn-primary" type="button" onClick={() => saveEditedComment(i.id, comment.id)}>
                                     Save
                                   </button>
                                   <button
-                                    className="ghost"
+                                    className="btn btn-ghost"
                                     type="button"
                                     onClick={() =>
                                       setEditingCommentByIncident((prev) => {
@@ -1250,7 +1258,7 @@ function App() {
                             {isOwner && !isEditing ? (
                               <div className="row">
                                 <button
-                                  className="ghost"
+                                  className="btn btn-ghost"
                                   type="button"
                                   onClick={() =>
                                     setEditingCommentByIncident((prev) => ({
@@ -1271,8 +1279,7 @@ function App() {
                       })}
                     </div>
                     <div className="row">
-                      <input
-                        placeholder="Add a comment"
+                      <input className="input" placeholder="Add a comment"
                         value={commentDraftByIncident[i.id] || ''}
                         onChange={(e) =>
                           setCommentDraftByIncident((prev) => ({
@@ -1281,7 +1288,7 @@ function App() {
                           }))
                         }
                       />
-                      <button className="primary" type="button" onClick={() => submitIncidentComment(i.id)}>
+                      <button className="btn btn-primary" type="button" onClick={() => submitIncidentComment(i.id)}>
                         Comment
                       </button>
                     </div>
@@ -1312,8 +1319,7 @@ function App() {
 
                       {isAdmin && (
                         <div className="row">
-                          <select
-                            value={incidentAction[i.id]?.technicianId || ''}
+                          <select className="input" value={incidentAction[i.id]?.technicianId || ''}
                             onChange={(e) =>
                               setIncidentAction({
                                 ...incidentAction,
@@ -1328,14 +1334,13 @@ function App() {
                               </option>
                             ))}
                           </select>
-                          <button className="ghost" type="button" onClick={() => assignToTechnician(i.id)}>
+                          <button className="btn btn-ghost" type="button" onClick={() => assignToTechnician(i.id)}>
                             Assign
                           </button>
                         </div>
                       )}
 
-                      <select
-                        value={incidentAction[i.id]?.status || ''}
+                      <select className="input" value={incidentAction[i.id]?.status || ''}
                         onChange={(e) =>
                           setIncidentAction({
                             ...incidentAction,
@@ -1349,8 +1354,7 @@ function App() {
                         <option value="RESOLVED">RESOLVED</option>
                         <option value="CLOSED">CLOSED</option>
                       </select>
-                      <input
-                        placeholder="Resolution note"
+                      <input className="input" placeholder="Resolution note"
                         value={incidentAction[i.id]?.resolutionNote || ''}
                         onChange={(e) =>
                           setIncidentAction({
@@ -1359,7 +1363,7 @@ function App() {
                           })
                         }
                       />
-                      <button className="primary" type="button" onClick={() => updateStatus(i.id)}>
+                      <button className="btn btn-primary" type="button" onClick={() => updateStatus(i.id)}>
                         Save Update
                       </button>
                     </div>
@@ -1389,7 +1393,7 @@ function App() {
                     <div className="row">
                       <small>{formatDate(n.createdAt)}</small>
                       {!n.isRead ? (
-                        <button className="ghost" type="button" onClick={() => readNotification(n.id)}>
+                        <button className="btn btn-ghost" type="button" onClick={() => readNotification(n.id)}>
                           Mark Read
                         </button>
                       ) : null}
@@ -1468,7 +1472,9 @@ function App() {
           </article>
         </section>
       )}
-    </main>
+            </div>
+      </main>
+    </div>
   );
 }
 
