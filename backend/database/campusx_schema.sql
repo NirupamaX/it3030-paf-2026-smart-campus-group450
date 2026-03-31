@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at DATETIME(6) NOT NULL,
   CONSTRAINT pk_users PRIMARY KEY (id),
   CONSTRAINT uk_users_email UNIQUE (email),
-  CONSTRAINT chk_users_role CHECK (role IN ('ADMIN', 'STUDENT', 'TECHNICIAN'))
+  CONSTRAINT chk_users_role CHECK (role IN ('ADMIN', 'USER', 'STUDENT', 'TECHNICIAN'))
 );
 
 CREATE TABLE IF NOT EXISTS facilities (
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS facilities (
   closing_time VARCHAR(255) NOT NULL,
   created_at DATETIME(6) NOT NULL,
   CONSTRAINT pk_facilities PRIMARY KEY (id),
-  CONSTRAINT chk_facilities_status CHECK (status IN ('AVAILABLE', 'UNDER_MAINTENANCE', 'OUT_OF_SERVICE')),
+  CONSTRAINT chk_facilities_status CHECK (status IN ('AVAILABLE', 'ACTIVE', 'UNDER_MAINTENANCE', 'OUT_OF_SERVICE')),
   CONSTRAINT chk_facilities_capacity CHECK (capacity > 0)
 );
 

@@ -30,9 +30,16 @@ public class FacilityController {
     @GetMapping
     public List<Map<String, Object>> list(
         @RequestParam(required = false) String q,
-        @RequestParam(required = false) String type
+        @RequestParam(required = false) String type,
+        @RequestParam(required = false) String location,
+        @RequestParam(required = false) Integer capacityMin,
+        @RequestParam(required = false) Integer capacityMax
     ) {
-        return facilityService.list(q, type).stream().map(ViewMapper::facility).toList();
+        return facilityService
+            .list(q, type, location, capacityMin, capacityMax)
+            .stream()
+            .map(ViewMapper::facility)
+            .toList();
     }
 
     @PostMapping

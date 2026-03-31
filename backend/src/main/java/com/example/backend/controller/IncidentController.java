@@ -10,6 +10,7 @@ import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.service.CurrentUserService;
 import com.example.backend.service.IncidentService;
+import com.example.backend.service.LocalFileStorageService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/incidents")
@@ -30,15 +33,26 @@ public class IncidentController {
 
     private final IncidentService incidentService;
     private final CurrentUserService currentUserService;
+    private final LocalFileStorageService localFileStorageService;
 
-    public IncidentController(IncidentService incidentService, CurrentUserService currentUserService) {
+    public IncidentController(
+        IncidentService incidentService,
+        CurrentUserService currentUserService,
+        LocalFileStorageService localFileStorageService
+    ) {
         this.incidentService = incidentService;
         this.currentUserService = currentUserService;
+        this.localFileStorageService = localFileStorageService;
     }
 
     @PostMapping
     public Map<String, Object> create(@Valid @RequestBody IncidentCreateRequest request) {
         return ViewMapper.incident(incidentService.create(request, currentUserService.getCurrentUser()));
+    }
+
+    @PostMapping("/uploads")
+    public Map<String, Object> uploadImages(@RequestParam("files") MultipartFile[] files) {
+        return Map.of("files", localFileStorageService.storeIncidentImages(files));
     }
 
     @GetMapping
