@@ -1,5 +1,11 @@
 import BookingSystem from './components/BookingSystem/BookingSystem';
 import './App.css';
+import { 
+  LayoutDashboard, Building2, Calendar as CalIcon, AlertTriangle, 
+  Bell, Shield, LogOut, RefreshCw, AlertCircle, CheckCircle, Menu, User,
+  Plus, Check, X, FileEdit, MessageSquare, Image as ImageIcon
+} from 'lucide-react';
+
 import LoginPage from './components/LoginPage/LoginPage';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -77,6 +83,7 @@ function App() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [facilities, setFacilities] = useState([]);
   const [facilitySearch, setFacilitySearch] = useState('');
@@ -486,50 +493,84 @@ function App() {
     );
   }
 
+  
+  const getTabIcon = (t) => {
+    switch (t) {
+      case 'Facilities': return <Building2 size={18} />;
+      case 'Bookings': return <CalIcon size={18} />;
+      case 'Incidents': return <AlertTriangle size={18} />;
+      case 'Notifications': return <Bell size={18} />;
+      case 'Admin': return <Shield size={18} />;
+      default: return <LayoutDashboard size={18} />;
+    }
+  };
+
   return (
-    <main className="app">
-      <header className="topbar">
-        <div className="topbar-copy">
-          <h1>CampusX</h1>
-          <p>Smart operations cockpit for your entire campus lifecycle.</p>
+    <div className="layout-container">
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-brand">
+          <LayoutDashboard size={24} />
+          <h2>CampusX</h2>
         </div>
-        <div className="top-actions">
-          <span className="role-pill">{user?.role || '-'}</span>
-          <button onClick={loadAll} className="ghost" type="button">
-            Refresh
-          </button>
-          <button onClick={onLogout} className="ghost" type="button">
-            Logout
-          </button>
-        </div>
-      </header>
+        <nav className="sidebar-nav">
+          {visibleTabs.map((item) => (
+            <button
+              key={item}
+              className={`nav-item ${tab === item ? 'active' : ''}`}
+              onClick={() => { setTab(item); setSidebarOpen(false); }}
+              type="button"
+            >
+              <div className="nav-item-content">
+                {getTabIcon(item)}
+                {item}
+              </div>
+              {item === 'Notifications' && unread > 0 ? (
+                <span className="badge badge-red">{unread}</span>
+              ) : null}
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-      {error ? <div className="alert error">{error}</div> : null}
-      {info ? <div className="alert success">{info}</div> : null}
+      <main className="main-wrapper">
+        <header className="topbar">
+          <div className="topbar-left">
+            <button className="btn btn-ghost d-sm-block" style={{ display: typeof window !== 'undefined' && window.innerWidth <= 768 ? 'block' : 'none'}} onClick={() => setSidebarOpen(true)}>
+              <Menu size={20} />
+            </button>
+            <h3 style={{ margin: 0, fontWeight: 600 }}>{tab}</h3>
+          </div>
+          <div className="topbar-right">
+            <button onClick={loadAll} className="ghost" type="button" title="Refresh">
+              <RefreshCw size={18} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '8px', borderLeft: '1px solid var(--border-color)' }}>
+              <span className="badge badge-indigo">{user?.role || '-'}</span>
+              <button onClick={onLogout} className="ghost" style={{color: 'var(--danger)'}} type="button">
+                <LogOut size={18} />
+              </button>
+            </div>
+          </div>
+        </header>
 
-      <section className="insight-strip">
-        {dashboardStats.map((item) => (
-          <article className="insight-card" key={item.label}>
-            <p>{item.label}</p>
-            <h2>{item.value}</h2>
-            <small>{item.hint}</small>
-          </article>
-        ))}
-      </section>
+        <div className="page-content-scroll">
+          {error && <div className="alert error"><AlertCircle size={18}/> {error}</div>}
+          {info && <div className="alert success"><CheckCircle size={18}/> {info}</div>}
 
-      <nav className="tabs">
-        {visibleTabs.map((item) => (
-          <button
-            key={item}
-            className={tab === item ? 'active' : ''}
-            onClick={() => setTab(item)}
-            type="button"
-          >
-            {item}
-            {item === 'Notifications' ? <span className="badge">{unread}</span> : null}
-          </button>
-        ))}
-      </nav>
+          {/* Quick Analytics Strip directly above tabs content */}
+          {tab === 'Facilities' && (
+             <section className="analytics-grid">
+               {dashboardStats.map((item) => (
+                 <article className="card analytic-card" key={item.label}>
+                   <p className="analytic-title">{item.label}</p>
+                   <div className="analytic-value">{item.value}</div>
+                   <span className="analytic-hint">{item.hint}</span>
+                 </article>
+               ))}
+             </section>
+          )}
+
+
 
       {tab === 'Facilities' && (
         <section className="panel-grid">
@@ -901,7 +942,9 @@ function App() {
           </article>
         </section>
       )}
-    </main>
+            </div>
+      </main>
+    </div>
   );
 }
 
