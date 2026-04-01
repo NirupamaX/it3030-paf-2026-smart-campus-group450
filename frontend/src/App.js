@@ -1,5 +1,6 @@
 import BookingSystem from './components/BookingSystem/BookingSystem';
 import './App.css';
+import LoginPage from './components/LoginPage/LoginPage';
 import { useEffect, useMemo, useState } from 'react';
 import {
   assignIncident,
@@ -461,112 +462,27 @@ function App() {
   };
 
   const authCard = (
-    <div className="auth-shell">
-      <div className="brand-card">
-        <h1>CampusX</h1>
-        <p className="slogan">Experience the future of education.</p>
-        <p>
-          Unified facilities, bookings, incident management, notifications, and role-based operations
-          for modern smart campuses.
-        </p>
-        <div className="brand-tags">
-          <span>Facilities</span>
-          <span>Bookings</span>
-          <span>Incidents</span>
-          <span>Role Security</span>
-        </div>
-        <a className="oauth-btn" href="http://localhost:8080/oauth2/authorization/google">
-          Continue with Google OAuth
-        </a>
-      </div>
-
-      <div className="auth-card">
-        <div className="auth-switch">
-          <button
-            className={mode === 'login' ? 'active' : ''}
-            onClick={() => setMode('login')}
-            type="button"
-          >
-            Login
-          </button>
-          <button
-            className={mode === 'register' ? 'active' : ''}
-            onClick={() => setMode('register')}
-            type="button"
-          >
-            Register
-          </button>
-        </div>
-
-        {mode === 'login' ? (
-          <form onSubmit={onLogin}>
-            <label>Email</label>
-            <input
-              type="email"
-              value={loginForm.email}
-              onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-              required
-            />
-            <label>Password</label>
-            <input
-              type="password"
-              value={loginForm.password}
-              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-              required
-            />
-            <button className="primary" type="submit" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={onRegister}>
-            <label>Full Name</label>
-            <input
-              value={registerForm.fullName}
-              onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
-              required
-            />
-            <label>Email</label>
-            <input
-              type="email"
-              value={registerForm.email}
-              onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-              required
-            />
-            <label>Password</label>
-            <input
-              type="password"
-              value={registerForm.password}
-              onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-              required
-            />
-            <label>Role</label>
-            <select
-              value={registerForm.role}
-              onChange={(e) => setRegisterForm({ ...registerForm, role: e.target.value })}
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            <button className="primary" type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Account'}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+    <LoginPage
+        mode={mode}
+        setMode={setMode}
+        loginForm={loginForm}
+        setLoginForm={setLoginForm}
+        onLogin={onLogin}
+        registerForm={registerForm}
+        setRegisterForm={setRegisterForm}
+        onRegister={onRegister}
+        loading={loading}
+        ROLES={ROLES}
+    />
   );
 
   if (!token) {
     return (
-      <main className="app">
-        {error ? <div className="alert error">{error}</div> : null}
-        {info ? <div className="alert success">{info}</div> : null}
+      <div className="login-root">
+        {error ? <div className="alert error toast">{error}</div> : null}
+        {info ? <div className="alert success toast">{info}</div> : null}
         {authCard}
-      </main>
+      </div>
     );
   }
 
@@ -620,7 +536,7 @@ function App() {
           <article className="panel">
             <h2>Facilities Catalogue</h2>
             <div className="row">
-              <input
+              <input className="input"
                 placeholder="Search by name, type, location"
                 value={facilitySearch}
                 onChange={(e) => setFacilitySearch(e.target.value)}
@@ -672,25 +588,25 @@ function App() {
             <article className="panel">
               <h2>{editingFacilityId ? 'Edit Facility' : 'Add Facility'}</h2>
               <form onSubmit={submitFacility} className="form-grid">
-                <input
+                <input className="input"
                   placeholder="Facility Name"
                   value={facilityForm.name}
                   onChange={(e) => setFacilityForm({ ...facilityForm, name: e.target.value })}
                   required
                 />
-                <input
+                <input className="input"
                   placeholder="Type"
                   value={facilityForm.type}
                   onChange={(e) => setFacilityForm({ ...facilityForm, type: e.target.value })}
                   required
                 />
-                <input
+                <input className="input"
                   placeholder="Location"
                   value={facilityForm.location}
                   onChange={(e) => setFacilityForm({ ...facilityForm, location: e.target.value })}
                   required
                 />
-                <input
+                <input className="input"
                   type="number"
                   min="1"
                   placeholder="Capacity"
@@ -698,25 +614,25 @@ function App() {
                   onChange={(e) => setFacilityForm({ ...facilityForm, capacity: e.target.value })}
                   required
                 />
-                <input
+                <input className="input"
                   placeholder="Opening Time (HH:mm)"
                   value={facilityForm.openingTime}
                   onChange={(e) => setFacilityForm({ ...facilityForm, openingTime: e.target.value })}
                   required
                 />
-                <input
+                <input className="input"
                   placeholder="Closing Time (HH:mm)"
                   value={facilityForm.closingTime}
                   onChange={(e) => setFacilityForm({ ...facilityForm, closingTime: e.target.value })}
                   required
                 />
-                <input
+                <input className="input"
                   placeholder="Operating Hours (e.g. 08:00-20:00)"
                   value={facilityForm.operatingHours}
                   onChange={(e) => setFacilityForm({ ...facilityForm, operatingHours: e.target.value })}
                   required
                 />
-                <select
+                <select className="input"
                   value={facilityForm.status}
                   onChange={(e) => setFacilityForm({ ...facilityForm, status: e.target.value })}
                   required
@@ -725,7 +641,7 @@ function App() {
                   <option value="UNDER_MAINTENANCE">UNDER_MAINTENANCE</option>
                   <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
                 </select>
-                <textarea
+                <textarea className="input"
                   placeholder="Description"
                   value={facilityForm.description}
                   onChange={(e) => setFacilityForm({ ...facilityForm, description: e.target.value })}
@@ -778,19 +694,19 @@ function App() {
           <article className="panel">
             <h2>Report Incident</h2>
             <form onSubmit={submitIncident} className="form-grid">
-              <input
+              <input className="input"
                 placeholder="Title"
                 value={incidentForm.title}
                 onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })}
                 required
               />
-              <input
+              <input className="input"
                 placeholder="Location"
                 value={incidentForm.location}
                 onChange={(e) => setIncidentForm({ ...incidentForm, location: e.target.value })}
                 required
               />
-              <select
+              <select className="input"
                 value={incidentForm.priority}
                 onChange={(e) => setIncidentForm({ ...incidentForm, priority: e.target.value })}
               >
@@ -799,12 +715,12 @@ function App() {
                 <option value="HIGH">HIGH</option>
                 <option value="CRITICAL">CRITICAL</option>
               </select>
-              <input
+              <input className="input"
                 placeholder="Image URL (optional)"
                 value={incidentForm.imageUrl}
                 onChange={(e) => setIncidentForm({ ...incidentForm, imageUrl: e.target.value })}
               />
-              <textarea
+              <textarea className="input"
                 placeholder="Description"
                 value={incidentForm.description}
                 onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })}
@@ -864,7 +780,7 @@ function App() {
 
                       {isAdmin && (
                         <div className="row">
-                          <select
+                          <select className="input"
                             value={incidentAction[i.id]?.technicianId || ''}
                             onChange={(e) =>
                               setIncidentAction({
@@ -886,7 +802,7 @@ function App() {
                         </div>
                       )}
 
-                      <select
+                      <select className="input"
                         value={incidentAction[i.id]?.status || ''}
                         onChange={(e) =>
                           setIncidentAction({
@@ -901,7 +817,7 @@ function App() {
                         <option value="RESOLVED">RESOLVED</option>
                         <option value="CLOSED">CLOSED</option>
                       </select>
-                      <input
+                      <input className="input"
                         placeholder="Resolution note"
                         value={incidentAction[i.id]?.resolutionNote || ''}
                         onChange={(e) =>
@@ -990,3 +906,6 @@ function App() {
 }
 
 export default App;
+
+
+
