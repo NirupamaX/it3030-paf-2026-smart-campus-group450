@@ -123,6 +123,7 @@ function App() {
     title: '',
     description: '',
     location: '',
+    category: 'OTHER',
     priority: 'MEDIUM',
     imageUrl: '',
   });
@@ -414,7 +415,7 @@ function App() {
     try {
       await createIncident(incidentForm);
       setInfo('Incident reported.');
-      setIncidentForm({ title: '', description: '', location: '', priority: 'MEDIUM', imageUrl: '' });
+      setIncidentForm({ title: '', description: '', location: '', category: 'OTHER', priority: 'MEDIUM', imageUrl: '' });
       await loadIncidents();
       await loadNotifications();
     } catch (err) {
@@ -755,6 +756,17 @@ function App() {
                 <option value="MEDIUM">MEDIUM</option>
                 <option value="HIGH">HIGH</option>
                 <option value="CRITICAL">CRITICAL</option>
+              </select>
+              <select className="input"
+                value={incidentForm.category}
+                onChange={(e) => setIncidentForm({ ...incidentForm, category: e.target.value })}
+              >
+                <option value="ELECTRICAL">ELECTRICAL</option>
+                <option value="NETWORK">NETWORK</option>
+                <option value="PLUMBING">PLUMBING</option>
+                <option value="HARDWARE">HARDWARE</option>
+                <option value="SOFTWARE">SOFTWARE</option>
+                <option value="OTHER">OTHER</option>
               </select>
               <input className="input"
                 placeholder="Image URL (optional)"

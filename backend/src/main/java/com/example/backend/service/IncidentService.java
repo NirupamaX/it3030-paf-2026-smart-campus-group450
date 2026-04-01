@@ -145,10 +145,11 @@ public class IncidentService {
             ticket.setRejectionReason(request.getRejectionReason().trim());
         }
 
+        String actorRole = actor.getRole() == Role.ADMIN ? "Admin" : "Technician";
         notificationService.create(
             ticket.getReporter(),
             NotificationType.INCIDENT,
-            "Incident #" + ticket.getId() + " status changed to " + request.getStatus().name() + "."
+            actorRole + " update on your Incident #" + ticket.getId() + ". Status changed to " + request.getStatus().name() + "."
         );
 
         if (ticket.getTechnician() != null && !ticket.getTechnician().getId().equals(ticket.getReporter().getId())) {
@@ -267,11 +268,12 @@ public class IncidentService {
     }
 
     private void notifyCommentParticipants(IncidentTicket ticket, User actor) {
+        String actorRole = actor.getRole() == Role.ADMIN ? "Admin" : (actor.getRole() == Role.TECHNICIAN ? "Technician" : "Student");
         if (!ticket.getReporter().getId().equals(actor.getId())) {
             notificationService.create(
                 ticket.getReporter(),
                 NotificationType.INCIDENT,
-                "New comment on incident #" + ticket.getId() + " by " + actor.getFullName() + "."
+                "New comment on incident #" + ticket.getId() + " by " + actorRole + " " + actor.getFullName() + "."
             );
         }
 
@@ -283,7 +285,7 @@ public class IncidentService {
             notificationService.create(
                 ticket.getTechnician(),
                 NotificationType.INCIDENT,
-                "New comment on incident #" + ticket.getId() + " by " + actor.getFullName() + "."
+                "New comment on incident #" + ticket.getId() + " by " + actorRole + " " + actor.getFullName() + "."
             );
         }
     }

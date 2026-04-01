@@ -18,6 +18,7 @@ com\example\backend\model\NotificationType.class
 com\example\backend\model\Facility.class
 com\example\backend\BackendApplication.class
 com\example\backend\repository\FacilityRepository.class
+com\example\backend\security\OAuth2AuthenticationSuccessHandler.class
 com\example\backend\dto\BookingDecisionRequest.class
 com\example\backend\repository\BookingRepository.class
 com\example\backend\repository\NotificationRepository.class
@@ -33,11 +34,13 @@ com\example\backend\controller\FacilityController.class
 com\example\backend\service\AuthService.class
 com\example\backend\controller\HomeController.class
 com\example\backend\repository\UserRepository.class
+com\example\backend\config\PasswordEncoderConfig.class
 com\example\backend\dto\IncidentCreateRequest.class
 com\example\backend\controller\BookingController.class
 com\example\backend\config\DataInitializer.class
 com\example\backend\repository\TicketCommentRepository.class
 com\example\backend\dto\RegisterRequest.class
+com\example\backend\service\LocalFileStorageService.class
 com\example\backend\dto\AuthResponse.class
 com\example\backend\controller\AdminController.class
 com\example\backend\model\IncidentCategory.class
