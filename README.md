@@ -1,35 +1,140 @@
-Smart Campus Operations Hub (IT3030 - PAF Assignment)
+# <span style="color:#22c55e">Smart</span> <span style="color:#3b82f6">Campus</span> <span style="color:#ec4899">Operations</span> <span style="color:#ef4444">Hub</span>
 
-📌 Project Overview
-This project is a comprehensive web-based solution designed to modernize university operations. It enables efficient management of campus facilities, asset bookings, and maintenance incident tracking.
+> A clean full-stack web application to manage facilities, bookings, and maintenance.
 
-🚀 Tech Stack
-Backend: Java Spring Boot (REST API)
+---
 
-Frontend: React.js
+## 🟢 <span style="color:#22c55e">Overview</span>
 
-Database: MySQL
+Smart Campus Operations Hub provides a centralized system for handling campus resources, scheduling, and issue tracking with a structured workflow.
 
-Security: OAuth 2.0 (Google SDK)
+---
 
-DevOps: GitHub Actions (CI/CD)
+## 🔵 <span style="color:#3b82f6">Features</span>
 
-🛠 Key Features
-Facilities Catalogue: Browse and search for campus resources (labs, halls, equipment).
+### Facilities & Assets
 
-Booking System: Real-time booking management with conflict detection.
+* Manage lecture halls, labs, rooms, and equipment
+* Store capacity, location, and availability
+* Search and filter resources
 
-Incident Ticketing: Report faults with image uploads and track resolution status.
+### Booking System
 
-Notifications: Instant updates on booking approvals and maintenance progress.
+* Create booking requests
+* Prevent scheduling conflicts
+* Track booking status
+* View user bookings
 
-Role-Based Access: Secure login and permissions for Students, Admins, and Technicians.
+### Maintenance & Tickets
 
-👥 Team Contributions
-Member 1: Facilities & Assets Catalogue (Backend & Frontend)
+* Report issues with resources
+* Upload images as evidence
+* Track ticket progress
+* Assign technicians and manage updates
 
-Member 2: Booking Management (Backend & Frontend)
+### Notifications
 
-Member 3: Maintenance & Incident Ticketing (Backend & Frontend)
+* Receive updates for bookings and tickets
+* In-app notification system
 
-Member 4: Authentication (OAuth 2.0) & Notifications
+### Authentication & Security
+
+* Secure login system
+* Role-based access control
+* Protected routes and APIs
+
+---
+
+## 🟣 <span style="color:#ec4899">Tech Stack</span>
+
+* **Backend:** Spring Boot, REST API, JPA/Hibernate, MySQL/PostgreSQL
+* **Frontend:** React, Axios/Fetch, Tailwind CSS/Bootstrap
+* **Tools:** Git, GitHub, GitHub Actions
+
+---
+
+## 🔴 <span style="color:#ef4444">Project Structure</span>
+
+```
+backend/
+frontend/
+docs/
+README.md
+```
+
+---
+
+## 🟢 <span style="color:#22c55e">Getting Started</span>
+
+### Prerequisites
+
+* Java 17+
+* Node.js (v18+)
+* MySQL / PostgreSQL
+
+### Backend Setup
+
+```
+cd backend
+./mvnw spring-boot:run
+```
+
+### Frontend Setup
+
+```
+cd frontend
+npm install
+npm start
+```
+
+---
+
+## 🔵 <span style="color:#3b82f6">Environment Configuration</span>
+
+Create `.env` files for:
+
+* Database connection
+* API base URL
+* Authentication credentials
+
+---
+
+## 🟣 <span style="color:#ec4899">API Overview</span>
+
+| Method | Endpoint           | Description       |
+| ------ | ------------------ | ----------------- |
+| GET    | /api/resources     | Get all resources |
+| POST   | /api/resources     | Create resource   |
+| GET    | /api/bookings      | Get bookings      |
+| POST   | /api/bookings      | Create booking    |
+| PUT    | /api/bookings/{id} | Update booking    |
+| DELETE | /api/bookings/{id} | Cancel booking    |
+| POST   | /api/tickets       | Create ticket     |
+| GET    | /api/tickets       | Get tickets       |
+
+---
+
+## 🔴 <span style="color:#ef4444">Testing</span>
+
+* Unit testing
+* API testing (Postman)
+* UI testing
+
+---
+
+## 🟢 <span style="color:#22c55e">Future Improvements</span>
+
+* Analytics dashboard
+* QR-based booking system
+* Email notifications
+* Mobile integration
+
+---
+
+## License
+
+For educational use.
+
+---
+
+<p align="center">✨ Simple • Clean • Functional</p>
