@@ -1,4 +1,4 @@
-package com.example.backend.service;
+﻿package com.example.backend.service;
 
 import com.example.backend.dto.BookingDecisionRequest;
 import com.example.backend.dto.BookingRequest;
@@ -17,6 +17,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -162,30 +166,28 @@ public class BookingService {
         }
     }
 
-    public List<Booking> listAll(BookingStatus status, LocalDate bookingDate) {
+    public Page<Booking> listAll(BookingStatus status, LocalDate bookingDate, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         if (status != null && bookingDate != null) {
-            return bookingRepository.findByStatusAndBookingDateOrderByCreatedAtDesc(status, bookingDate);
+            return bookingRepository.findByStatusAndBookingDate(status, bookingDate, pageable);
         }
-
         if (status != null) {
-            return bookingRepository.findByStatusOrderByCreatedAtDesc(status);
+            return bookingRepository.findByStatus(status, pageable);
         }
-
         if (bookingDate != null) {
-            return bookingRepository.findByBookingDateOrderByCreatedAtDesc(bookingDate);
+            return bookingRepository.findByBookingDate(bookingDate, pageable);
         }
-
-        return bookingRepository.findAllByOrderByCreatedAtDesc();
+        return bookingRepository.findAll(pageable);
     }
 
-    public List<Booking> listByUserId(Long userId, User actor) {
+    public Page<Booking> listByUserId(Long userId, User actor, int page, int size) {
         boolean isOwner = actor.getId().equals(userId);
         boolean isAdmin = actor.getRole() == Role.ADMIN;
         if (!isOwner && !isAdmin) {
             throw new ResponseStatusException(FORBIDDEN, "You can only view your own bookings");
         }
-
-        return bookingRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return bookingRepository.findByUserId(userId, pageable);
     }
 
     @Transactional
@@ -280,3 +282,4 @@ public class BookingService {
         return booking;
     }
 }
+

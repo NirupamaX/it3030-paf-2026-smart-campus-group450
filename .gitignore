@@ -1,0 +1,27 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Maven build output
+backend/target/
+backend/*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Uploads (local files)
+backend/uploads/
+
+# Environment / secrets — never commit these
+*.env
+.env.local
+
+append_css.js
+style_builder.js
+build_patch.js
+patch.js
+start-backend.ps1

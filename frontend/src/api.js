@@ -1,4 +1,4 @@
-const API_BASE =
+﻿const API_BASE =
   process.env.REACT_APP_API_BASE || `http://${window.location.hostname || 'localhost'}:8082/api`;
 
 function getToken() {
@@ -8,37 +8,23 @@ function getToken() {
 async function request(path, options = {}) {
   const token = getToken();
   const isFormData = options.body instanceof FormData;
-
-  const headers = {
-    ...(options.headers || {}),
-  };
+  const headers = { ...(options.headers || {}) };
 
   if (!isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   let response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers,
-    });
+    response = await fetch(`${API_BASE}${path}`, { ...options, headers });
   } catch {
-    throw new Error('Cannot connect to backend API. Make sure backend is running.');
+    throw new Error('Cannot connect to backend. Make sure the backend is running on port 8082.');
   }
 
   const text = await response.text();
   let data = null;
-
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = { raw: text };
-  }
+  try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
 
   if (!response.ok) {
     const validationDetails =
@@ -47,183 +33,139 @@ async function request(path, options = {}) {
         : null;
 
     const message =
-      validationDetails ||
       data?.message ||
       data?.error ||
       (typeof data?.raw === 'string' ? data.raw.slice(0, 160) : null) ||
       `Request failed (${response.status})`;
     throw new Error(message);
   }
-
   return data;
 }
 
-export async function login(payload) {
-  return request('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
+// â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const login = (payload) =>
+  request('/auth/login', { method: 'POST', body: JSON.stringify(payload) });
 
-export async function register(payload) {
-  return request('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
+export const register = (payload) =>
+  request('/auth/register', { method: 'POST', body: JSON.stringify(payload) });
 
-export async function getMe() {
-  return request('/auth/me');
-}
+export const getMe = () => request('/auth/me');
 
-export async function listFacilities(filters = {}) {
+export const forgotPassword = (email) =>
+  request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+
+export const resetPassword = (payload) =>
+  request('/auth/reset-password', { method: 'POST', body: JSON.stringify(payload) });
+
+export const sendOtp = (email) =>
+  request('/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
+
+export const verifyOtp = (email, otp) =>
+  request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) });
+
+// â”€â”€ Facilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export function listFacilities(filters = {}) {
   const params = new URLSearchParams();
-
   if (filters.q) params.set('q', filters.q);
   if (filters.type) params.set('type', filters.type);
   if (filters.location) params.set('location', filters.location);
-  if (Number.isFinite(filters.capacityMin)) {
-    params.set('capacityMin', String(filters.capacityMin));
-  }
-  if (Number.isFinite(filters.capacityMax)) {
-    params.set('capacityMax', String(filters.capacityMax));
-  }
-
-  const suffix = params.toString() ? `?${params.toString()}` : '';
-  return request(`/facilities${suffix}`);
+  if (Number.isFinite(filters.capacityMin)) params.set('capacityMin', String(filters.capacityMin));
+  if (Number.isFinite(filters.capacityMax)) params.set('capacityMax', String(filters.capacityMax));
+  const qs = params.toString();
+  return request(`/facilities${qs ? '?' + qs : ''}`);
 }
 
-export async function getFacilityById(id) {
-  return request(`/facilities/${id}`);
+export const createFacility = (payload) =>
+  request('/facilities', { method: 'POST', body: JSON.stringify(payload) });
+
+export const updateFacility = (id, payload) =>
+  request(`/facilities/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+
+export const deleteFacility = (id) =>
+  request(`/facilities/${id}`, { method: 'DELETE' });
+
+// â”€â”€ Bookings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const createBooking = (payload) =>
+  request('/bookings', { method: 'POST', body: JSON.stringify(payload) });
+
+export async function listMyBookings({ page = 0, size = 50 } = {}) {
+  const data = await request(`/bookings/mine?page=${page}&size=${size}`);
+  // backend returns PagedResponse { content, page, size, totalElements, totalPages, last }
+  return Array.isArray(data) ? data : (data?.content ?? []);
 }
 
-export async function createFacility(payload) {
-  return request('/facilities', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+export async function listAllBookings({ page = 0, size = 50, status, bookingDate } = {}) {
+  const params = new URLSearchParams({ page, size });
+  if (status) params.set('status', status);
+  if (bookingDate) params.set('bookingDate', bookingDate);
+  const data = await request(`/bookings?${params.toString()}`);
+  return Array.isArray(data) ? data : (data?.content ?? []);
 }
 
-export async function updateFacility(id, payload) {
-  return request(`/facilities/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
-}
+// Backend BookingDecisionRequest accepts { status, rejectionReason } OR aliases { decision, comment }
+export const bookingDecision = (id, payload) =>
+  request(`/bookings/${id}/decision`, { method: 'PATCH', body: JSON.stringify(payload) });
 
-export async function deleteFacility(id) {
-  return request(`/facilities/${id}`, {
-    method: 'DELETE',
-  });
-}
+export const cancelBooking = (id) =>
+  request(`/bookings/${id}`, { method: 'DELETE' });
 
-export async function createBooking(payload) {
-  return request('/bookings', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
+export const checkAvailability = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/bookings/availability?${qs}`);
+};
 
-export async function listMyBookings() {
-  return request('/bookings/mine');
-}
-
-export async function listAllBookings() {
-  return request('/bookings');
-}
-
-export async function bookingDecision(id, payload) {
-  return request(`/bookings/${id}/decision`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function createIncident(payload) {
-  return request('/incidents', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
+// â”€â”€ Incidents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const createIncident = (payload) =>
+  request('/incidents', { method: 'POST', body: JSON.stringify(payload) });
 
 export async function uploadIncidentImages(files = []) {
   const formData = new FormData();
-  files.forEach((file) => formData.append('files', file));
-
-  return request('/incidents/uploads', {
-    method: 'POST',
-    body: formData,
-  });
+  files.forEach((f) => formData.append('files', f));
+  const data = await request('/incidents/uploads', { method: 'POST', body: formData });
+  return data?.files ?? [];
 }
 
-export async function listMyIncidents() {
-  return request('/incidents/mine');
+export async function listMyIncidents({ page = 0, size = 50 } = {}) {
+  const data = await request(`/incidents/mine?page=${page}&size=${size}`);
+  return Array.isArray(data) ? data : (data?.content ?? []);
 }
 
-export async function listAssignedIncidents() {
-  return request('/incidents/assigned');
+export async function listAllIncidents({ page = 0, size = 50 } = {}) {
+  const data = await request(`/incidents?page=${page}&size=${size}`);
+  return Array.isArray(data) ? data : (data?.content ?? []);
 }
 
-export async function updateIncidentStatus(id, payload) {
-  return request(`/incidents/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
+export async function listAssignedIncidents({ page = 0, size = 50 } = {}) {
+  const data = await request(`/incidents/assigned?page=${page}&size=${size}`);
+  return Array.isArray(data) ? data : (data?.content ?? []);
 }
 
-export async function assignIncident(id, payload) {
-  return request(`/incidents/${id}/assign`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
-}
+export const assignIncident = (id, payload) =>
+  request(`/incidents/${id}/assign`, { method: 'PATCH', body: JSON.stringify(payload) });
 
-export async function listIncidentComments(id) {
-  return request(`/incidents/${id}/comments`);
-}
+export const updateIncidentStatus = (id, payload) =>
+  request(`/incidents/${id}/status`, { method: 'PATCH', body: JSON.stringify(payload) });
 
-export async function addIncidentComment(id, payload) {
-  return request(`/incidents/${id}/comments`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
+export const listIncidentComments = (id) => request(`/incidents/${id}/comments`);
 
-export async function updateIncidentComment(id, commentId, payload) {
-  return request(`/incidents/${id}/comments/${commentId}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
-}
+export const addIncidentComment = (id, payload) =>
+  request(`/incidents/${id}/comments`, { method: 'POST', body: JSON.stringify(payload) });
 
-export async function deleteIncidentComment(id, commentId) {
-  return request(`/incidents/${id}/comments/${commentId}`, {
-    method: 'DELETE',
-  });
-}
+export const updateIncidentComment = (id, commentId, payload) =>
+  request(`/incidents/${id}/comments/${commentId}`, { method: 'PUT', body: JSON.stringify(payload) });
 
-export async function listIncidentAttachments(id) {
-  return request(`/incidents/${id}/attachments`);
-}
+export const deleteIncidentComment = (id, commentId) =>
+  request(`/incidents/${id}/comments/${commentId}`, { method: 'DELETE' });
 
-export async function listNotifications() {
-  return request('/notifications');
-}
+export const listIncidentAttachments = (id) => request(`/incidents/${id}/attachments`);
 
-export async function markNotificationRead(id) {
-  return request(`/notifications/${id}/read`, {
-    method: 'PATCH',
-  });
-}
+// â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const listNotifications = () => request('/notifications');
+export const getUnreadCount = () => request('/notifications/unread-count');
+export const markNotificationRead = (id) =>
+  request(`/notifications/${id}/read`, { method: 'PATCH' });
 
-export async function getUnreadCount() {
-  return request('/notifications/unread-count');
-}
+// â”€â”€ Admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const listUsers = () => request('/admin/users');
+export const listTechnicians = () => request('/admin/technicians');
 
-export async function listUsers() {
-  return request('/admin/users');
-}
-
-export async function listTechnicians() {
-  return request('/admin/technicians');
-}
