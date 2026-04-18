@@ -1,4 +1,5 @@
 import BookingSystem from './components/BookingSystem/BookingSystem';
+import AdminDashboardUI from './components/BookingSystem/AdminDashboardUI';
 import './App.css';
 import {
   LayoutDashboard,
@@ -54,6 +55,20 @@ function formatDate(value) {
 
 function todayDateValue() {
   return new Date().toISOString().split('T')[0];
+}
+
+function sameBookingSlot(a, b) {
+  if (!a || !b) return false;
+
+  const aResourceId = String(a.resourceId ?? a.facilityId ?? a.facility?.id ?? '');
+  const bResourceId = String(b.resourceId ?? b.facilityId ?? b.facility?.id ?? '');
+
+  return (
+    aResourceId === bResourceId &&
+    String(a.bookingDate || '') === String(b.bookingDate || '') &&
+    String(a.startTime || '') === String(b.startTime || '') &&
+    String(a.endTime || '') === String(b.endTime || '')
+  );
 }
 
 function toMinutes(timeValue) {
@@ -197,18 +212,27 @@ function App() {
     setFacilities(data);
   };
 
-  const loadBookings = async () => {
+  const loadBookings = async (activeRole = user?.role) => {
+    let mine = [];
+
     try {
-      const mine = await listMyBookings();
+      mine = await listMyBookings();
       setBookings(mine);
     } catch (e) {}
 
-    try {
-      const all = await listAllBookings();
-      setAllBookings(all);
-    } catch (e) {
-      if (isAdmin) console.error('Error loading all bookings', e);
+    if (activeRole === 'ADMIN') {
+      try {
+        const all = await listAllBookings();
+        setAllBookings(all);
+      } catch (e) {
+        console.error('Error loading all bookings', e);
+        setAllBookings(mine);
+      }
+      return;
     }
+
+    // For non-admin users, keep availability in sync with their own submitted bookings.
+    setAllBookings(mine);
   };
 
   const loadIncidents = async () => {
@@ -244,7 +268,7 @@ function App() {
       setUser(me);
 
       await loadFacilities(facilitySearch);
-      await loadBookings();
+      await loadBookings(me?.role);
       await loadIncidents();
       await loadNotifications();
 
@@ -469,7 +493,7 @@ function App() {
         expectedAttendees: 1,
       });
 
-      await loadBookings();
+      await loadBookings(user?.role);
       await loadNotifications();
     } catch (err) {
       setError(err.message);
@@ -545,6 +569,36 @@ function App() {
       await loadNotifications();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const approveBooking = async (id) => {
+    clearMessages();
+
+    try {
+      await bookingDecision(id, { status: 'APPROVED' });
+      setInfo('Booking approved.');
+      await loadBookings(user?.role);
+      await loadNotifications();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const rejectBooking = async (id) => {
+    clearMessages();
+    const reason = prompt('Reason for rejection:');
+    if (!reason || !reason.trim()) {
+      return;
+    }
+
+    try {
+      await bookingDecision(id, { status: 'REJECTED', rejectionReason: reason.trim() });
+      setInfo('Booking rejected.');
+      await loadBookings(user?.role);
+      await loadNotifications();
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -856,32 +910,32 @@ function App() {
                 isAdmin={isAdmin}
                 onSubmitBooking={async (params) => {
                   try {
-                    await createBooking(params);
+                    const created = await createBooking(params);
+
+                    // Reflect the new booking in the UI immediately.
+                    setBookings((previous) => {
+                      if (previous.some((booking) => sameBookingSlot(booking, created))) {
+                        return previous;
+                      }
+                      return [created, ...previous];
+                    });
+
+                    setAllBookings((previous) => {
+                      if (previous.some((booking) => sameBookingSlot(booking, created))) {
+                        return previous;
+                      }
+                      return [created, ...previous];
+                    });
+
                     setInfo('Booking request created successfully.');
-                    loadBookings();
+                    await loadBookings(user?.role);
                   } catch (err) {
                     setError(err.message);
+                    throw err;
                   }
                 }}
-                onApproveBooking={async (id) => {
-                  try {
-                    await bookingDecision(id, { decision: 'APPROVED', comment: '' });
-                    loadBookings();
-                  } catch (e) {
-                    setError(e.message);
-                  }
-                }}
-                onRejectBooking={async (id) => {
-                  const reason = prompt('Reason for rejection:');
-                  if (reason) {
-                    try {
-                      await bookingDecision(id, { decision: 'REJECTED', comment: reason });
-                      loadBookings();
-                    } catch (e) {
-                      setError(e.message);
-                    }
-                  }
-                }}
+                onApproveBooking={approveBooking}
+                onRejectBooking={rejectBooking}
               />
             </div>
           )}
@@ -1118,7 +1172,20 @@ function App() {
           )}
 
           {tab === 'Admin' && isAdmin && (
-            <section className="panel-grid single">
+            <section className="panel-grid">
+              <article className="panel">
+                <h2>Booking Approval Queue</h2>
+                <p style={{ marginTop: 0, color: 'var(--text-muted)' }}>
+                  Review pending booking requests from all users.
+                </p>
+                <AdminDashboardUI
+                  bookings={allBookings}
+                  onApprove={approveBooking}
+                  onReject={rejectBooking}
+                  defaultFilter="PENDING"
+                />
+              </article>
+
               <article className="panel">
                 <h2>Role Management</h2>
 

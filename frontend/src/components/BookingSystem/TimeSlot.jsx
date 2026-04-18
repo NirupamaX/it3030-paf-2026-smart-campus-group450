@@ -30,7 +30,7 @@ export default function TimeSlot({
   }
 
   const handleClick = () => {
-    if (status !== 'BOOKED') {
+    if (status !== 'BOOKED' && status !== 'PENDING') {
       onSelect(time);
     }
   };
@@ -41,7 +41,7 @@ export default function TimeSlot({
       className={btnClass} 
       onClick={handleClick}
       title={titleText}
-      disabled={status === 'BOOKED'}
+      disabled={status === 'BOOKED' || status === 'PENDING'}
     >
       {isSelected ? '✓' : ''}
     </button>

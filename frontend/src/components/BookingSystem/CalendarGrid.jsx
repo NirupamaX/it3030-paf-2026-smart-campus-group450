@@ -46,7 +46,7 @@ export default function CalendarGrid({
       const current = parseInt(hour.split(':')[0]);
       
       if (current >= st && current < et) {
-        return b.status === 'APPROVED' ? 'BOOKED' : 'PENDING';
+        return 'BOOKED';
       }
     }
     return 'AVAILABLE';

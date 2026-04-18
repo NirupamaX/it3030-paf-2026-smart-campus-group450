@@ -100,6 +100,8 @@ public class BookingService {
         booking.setEndTime(request.getEndTime());
         booking.setPurpose(request.getPurpose());
         booking.setExpectedAttendees(request.getExpectedAttendees());
+        booking.setAttendees(request.getExpectedAttendees());
+        booking.setConflictFlag(false);
         booking.setStatus(BookingStatus.PENDING);
 
         Booking saved = bookingRepository.save(booking);

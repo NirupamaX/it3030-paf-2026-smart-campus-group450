@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import CalendarGrid from './CalendarGrid';
 import AdminDashboardUI from './AdminDashboardUI';
 import { Calendar as CalendarIcon, Clock, MapPin, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -27,6 +27,15 @@ export default function BookingSystem({
   const [purpose, setPurpose] = useState('');
   const [attendees, setAttendees] = useState(1);
 
+  useEffect(() => {
+    if (isAdmin) {
+      setView((current) => (current === 'CREATE' ? 'ADMIN' : current));
+      return;
+    }
+
+    setView((current) => (current === 'ADMIN' ? 'CREATE' : current));
+  }, [isAdmin]);
+
   // Helper to get formatted next date
   const changeDate = (days) => {
     const d = new Date(selectedDate);
@@ -49,15 +58,29 @@ export default function BookingSystem({
     return list;
   }, [startHour, endHour]);
 
+  const bookingsForAvailability = useMemo(() => {
+    if (isAdmin) {
+      return allBookings;
+    }
+
+    return userBookings;
+  }, [allBookings, isAdmin, userBookings]);
+
   // Filter bookings for the selected date and facility
   const relevantBookings = useMemo(() => {
-    
-    // For visual booking, we need all bookings for that facility on that date
-    return allBookings.filter(b => 
-      (b.facilityId === Number(selectedFacilityId) || b.facilityId === selectedFacilityId) && 
-      b.bookingDate === selectedDate
-    );
-  }, [allBookings, selectedFacilityId, selectedDate, isAdmin]);
+    const selectedId = Number(selectedFacilityId);
+    if (!selectedId) {
+      return [];
+    }
+
+    // Use normalized facility/resource identifier from backend view payload.
+    return bookingsForAvailability.filter((booking) => {
+      const bookingFacilityId = Number(
+        booking.resourceId ?? booking.facilityId ?? booking.facility?.id
+      );
+      return bookingFacilityId === selectedId && booking.bookingDate === selectedDate;
+    });
+  }, [bookingsForAvailability, selectedFacilityId, selectedDate]);
 
   const handleSlotToggle = (hour) => {
     // If selecting contiguous slots, or just single slot.
@@ -81,7 +104,7 @@ export default function BookingSystem({
     return { startTime: st, endTime: et };
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const range = getContinuousRange();
     if (!range) return;
@@ -91,19 +114,23 @@ export default function BookingSystem({
       return;
     }
 
-    onSubmitBooking({
-      facilityId: selectedFacilityId,
-      bookingDate: selectedDate,
-      startTime: range.startTime,
-      endTime: range.endTime,
-      purpose,
-      expectedAttendees: parseInt(attendees)
-    });
-    
-    // Clear selection
-    setSelectedSlots([]);
-    setPurpose('');
-    setAttendees(1);
+    try {
+      await onSubmitBooking({
+        resourceId: Number(selectedFacilityId),
+        bookingDate: selectedDate,
+        startTime: range.startTime,
+        endTime: range.endTime,
+        purpose: purpose.trim(),
+        expectedAttendees: Number(attendees)
+      });
+
+      // Clear selection only after a successful booking request.
+      setSelectedSlots([]);
+      setPurpose('');
+      setAttendees(1);
+    } catch (submitError) {
+      // Parent handles displaying the detailed error.
+    }
   };
 
   const range = getContinuousRange();
@@ -125,6 +152,12 @@ export default function BookingSystem({
           </select>
         </div>
       </div>
+
+      {isAdmin && view === 'ADMIN' && (
+        <p style={{ margin: 0, color: '#6b7280' }}>
+          Approve or reject pending booking requests in this section.
+        </p>
+      )}
 
       {view === 'CREATE' && (
         <div className="booking-main-layout">
@@ -249,6 +282,7 @@ export default function BookingSystem({
           bookings={allBookings} 
           onApprove={onApproveBooking}
           onReject={onRejectBooking}
+          defaultFilter="PENDING"
         />
       )}
     </div>

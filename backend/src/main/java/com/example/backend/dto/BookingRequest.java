@@ -1,7 +1,7 @@
 package com.example.backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,7 +18,7 @@ public class BookingRequest {
     private Long resourceId;
 
     @NotNull
-    @Future
+    @FutureOrPresent
     private LocalDate bookingDate;
 
     @NotNull

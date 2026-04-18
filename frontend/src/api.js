@@ -41,7 +41,13 @@ async function request(path, options = {}) {
   }
 
   if (!response.ok) {
+    const validationDetails =
+      data?.details && typeof data.details === 'object'
+        ? Object.values(data.details).filter(Boolean).join(', ')
+        : null;
+
     const message =
+      validationDetails ||
       data?.message ||
       data?.error ||
       (typeof data?.raw === 'string' ? data.raw.slice(0, 160) : null) ||

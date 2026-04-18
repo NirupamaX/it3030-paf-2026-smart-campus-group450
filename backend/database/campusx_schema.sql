@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   end_time TIME(6) NOT NULL,
   purpose VARCHAR(1000) NOT NULL,
   expected_attendees INT NOT NULL,
+  conflict_flag BIT(1) NOT NULL DEFAULT b'0',
   status VARCHAR(32) NOT NULL,
   rejection_reason VARCHAR(1000),
   created_at DATETIME(6) NOT NULL,
