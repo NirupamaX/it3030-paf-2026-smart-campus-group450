@@ -271,3 +271,240 @@ tr:hover td{background:var(--bg-hover);}
   .login-card{padding:28px 20px;}
   .panel-grid{grid-template-columns:1fr;}
 }
+
+/* ── Forgot Password ─────────────────────────────────────────────────────── */
+.fp-error {
+  background: var(--danger-light, #fee2e2);
+  color: var(--danger, #dc2626);
+  border: 1px solid var(--danger, #dc2626);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  margin-bottom: 14px;
+}
+
+.fp-back-btn {
+  width: 100%;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.fp-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.fp-success-icon {
+  color: #22c55e;
+}
+
+.fp-success h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.fp-success p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.fp-success .primary-btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* ── Registration Step Bar ───────────────────────────────────────────────── */
+.reg-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 24px;
+}
+.reg-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+.reg-step.active { color: #4F46E5; }
+.reg-step.done   { color: #22c55e; }
+.reg-step-circle {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.reg-step.active .reg-step-circle {
+  background: #4F46E5;
+  color: white;
+  box-shadow: 0 0 0 4px rgba(79,70,229,0.15);
+}
+.reg-step.done .reg-step-circle {
+  background: #22c55e;
+  color: white;
+}
+.reg-step-line {
+  width: 32px; height: 2px;
+  background: #e2e8f0;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+.reg-step.done .reg-step-line { background: #22c55e; }
+
+/* ── OTP Panel ───────────────────────────────────────────────────────────── */
+.otp-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0;
+  animation: fadeSlideUp 0.35s ease;
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.otp-icon-wrap {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+  display: flex; align-items: center; justify-content: center;
+  color: #4F46E5;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 14px rgba(79,70,229,0.15);
+}
+.otp-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+.otp-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.otp-subtitle strong { color: #0f172a; }
+
+/* 4 digit boxes */
+.otp-boxes {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.otp-box {
+  width: 56px; height: 64px;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s ease;
+  caret-color: transparent;
+}
+.otp-box:focus {
+  border-color: #6366F1;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
+  transform: translateY(-2px);
+}
+.otp-box.filled {
+  border-color: #4F46E5;
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.otp-error {
+  width: 100%;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.otp-resend {
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+.otp-resend strong { color: #4F46E5; }
+
+.otp-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: color 0.2s, background 0.2s;
+}
+.otp-back-btn:hover { color: #4F46E5; background: #EEF2FF; }
+
+/* ── Verified panel (step 2) ─────────────────────────────────────────────── */
+.otp-verified-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0;
+  animation: fadeSlideUp 0.35s ease;
+}
+.otp-verified-badge {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  display: flex; align-items: center; justify-content: center;
+  color: #16a34a;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(34,197,94,0.2);
+}
+.otp-verified-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #16a34a;
+  margin-bottom: 4px;
+}
+.otp-verified-email {
+  font-size: 0.875rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 4px;
+}
+
+/* ── Spinner inside button ───────────────────────────────────────────────── */
+.btn-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-spinner svg { animation: spin 0.8s linear infinite; }
