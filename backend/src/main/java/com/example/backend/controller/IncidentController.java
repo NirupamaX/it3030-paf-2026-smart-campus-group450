@@ -1,10 +1,11 @@
-package com.example.backend.controller;
+﻿package com.example.backend.controller;
 
 import com.example.backend.dto.IncidentAssignRequest;
 import com.example.backend.dto.IncidentCommentCreateRequest;
 import com.example.backend.dto.IncidentCommentUpdateRequest;
 import com.example.backend.dto.IncidentCreateRequest;
 import com.example.backend.dto.IncidentUpdateRequest;
+import com.example.backend.dto.PagedResponse;
 import com.example.backend.dto.ViewMapper;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
@@ -14,6 +15,7 @@ import com.example.backend.service.LocalFileStorageService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -57,28 +59,41 @@ public class IncidentController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TECHNICIAN')")
-    public List<Map<String, Object>> listAll() {
-        return incidentService.listAll().stream().map(ViewMapper::incident).toList();
+    public PagedResponse listAll(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
+        Page<com.example.backend.model.IncidentTicket> result = incidentService.listAll(page, size);
+        return PagedResponse.of(result.getContent().stream().map(ViewMapper::incident).toList(),
+            page, size, result.getTotalElements());
     }
 
     @GetMapping("/mine")
-    public List<Map<String, Object>> myReported() {
-        return incidentService
-            .listMyReported(currentUserService.getCurrentUser())
-            .stream()
-            .map(ViewMapper::incident)
-            .toList();
+    public PagedResponse myReported(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
+        Page<com.example.backend.model.IncidentTicket> result =
+            incidentService.listMyReported(currentUserService.getCurrentUser(), page, size);
+        return PagedResponse.of(result.getContent().stream().map(ViewMapper::incident).toList(),
+            page, size, result.getTotalElements());
     }
 
     @GetMapping("/assigned")
     @PreAuthorize("hasAnyRole('ADMIN','TECHNICIAN')")
-    public List<Map<String, Object>> assigned() {
+    public PagedResponse assigned(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
         User current = currentUserService.getCurrentUser();
         if (current.getRole() == Role.ADMIN) {
-            return incidentService.listAll().stream().map(ViewMapper::incident).toList();
+            Page<com.example.backend.model.IncidentTicket> result = incidentService.listAll(page, size);
+            return PagedResponse.of(result.getContent().stream().map(ViewMapper::incident).toList(),
+                page, size, result.getTotalElements());
         }
-
-        return incidentService.listAssignedTo(current).stream().map(ViewMapper::incident).toList();
+        Page<com.example.backend.model.IncidentTicket> result = incidentService.listAssignedTo(current, page, size);
+        return PagedResponse.of(result.getContent().stream().map(ViewMapper::incident).toList(),
+            page, size, result.getTotalElements());
     }
 
     @PatchMapping("/{id}/assign")
@@ -142,3 +157,4 @@ public class IncidentController {
         incidentService.deleteComment(id, commentId, currentUserService.getCurrentUser());
     }
 }
+

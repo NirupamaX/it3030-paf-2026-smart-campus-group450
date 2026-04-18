@@ -1,7 +1,8 @@
-package com.example.backend.controller;
+﻿package com.example.backend.controller;
 
 import com.example.backend.dto.BookingDecisionRequest;
 import com.example.backend.dto.BookingRequest;
+import com.example.backend.dto.PagedResponse;
 import com.example.backend.dto.ViewMapper;
 import com.example.backend.model.BookingStatus;
 import com.example.backend.service.BookingService;
@@ -9,8 +10,8 @@ import com.example.backend.service.CurrentUserService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,31 +47,40 @@ public class BookingController {
     }
 
     @GetMapping("/user/{userId}")
-    public List<Map<String, Object>> getByUser(@PathVariable Long userId) {
-        return bookingService
-            .listByUserId(userId, currentUserService.getCurrentUser())
-            .stream()
-            .map(ViewMapper::booking)
-            .toList();
+    public PagedResponse getByUser(
+        @PathVariable Long userId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
+        Page<com.example.backend.model.Booking> result =
+            bookingService.listByUserId(userId, currentUserService.getCurrentUser(), page, size);
+        return PagedResponse.of(result.getContent().stream().map(ViewMapper::booking).toList(),
+            page, size, result.getTotalElements());
     }
 
     @GetMapping("/mine")
-    public List<Map<String, Object>> mine() {
+    public PagedResponse mine(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
         Long currentUserId = currentUserService.getCurrentUser().getId();
-        return bookingService
-            .listByUserId(currentUserId, currentUserService.getCurrentUser())
-            .stream()
-            .map(ViewMapper::booking)
-            .toList();
+        Page<com.example.backend.model.Booking> result =
+            bookingService.listByUserId(currentUserId, currentUserService.getCurrentUser(), page, size);
+        return PagedResponse.of(result.getContent().stream().map(ViewMapper::booking).toList(),
+            page, size, result.getTotalElements());
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<Map<String, Object>> all(
+    public PagedResponse all(
         @RequestParam(required = false) BookingStatus status,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bookingDate
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bookingDate,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
     ) {
-        return bookingService.listAll(status, bookingDate).stream().map(ViewMapper::booking).toList();
+        Page<com.example.backend.model.Booking> result = bookingService.listAll(status, bookingDate, page, size);
+        return PagedResponse.of(result.getContent().stream().map(ViewMapper::booking).toList(),
+            page, size, result.getTotalElements());
     }
 
     @PutMapping("/{id}/status")
@@ -118,3 +128,4 @@ public class BookingController {
         return ViewMapper.booking(bookingService.cancel(id, currentUserService.getCurrentUser()));
     }
 }
+

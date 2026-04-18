@@ -1,4 +1,4 @@
-package com.example.backend.service;
+﻿package com.example.backend.service;
 
 import com.example.backend.dto.IncidentAssignRequest;
 import com.example.backend.dto.IncidentCommentCreateRequest;
@@ -19,6 +19,10 @@ import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -85,12 +89,27 @@ public class IncidentService {
         return saved;
     }
 
+    public Page<IncidentTicket> listAll(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return incidentRepository.findAll(pageable);
+    }
+
     public List<IncidentTicket> listAll() {
         return incidentRepository.findAllByOrderByUpdatedAtDesc();
     }
 
+    public Page<IncidentTicket> listMyReported(User user, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return incidentRepository.findByReporterId(user.getId(), pageable);
+    }
+
     public List<IncidentTicket> listMyReported(User user) {
         return incidentRepository.findByReporterIdOrderByCreatedAtDesc(user.getId());
+    }
+
+    public Page<IncidentTicket> listAssignedTo(User technician, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return incidentRepository.findByTechnicianId(technician.getId(), pageable);
     }
 
     public List<IncidentTicket> listAssignedTo(User technician) {
@@ -296,3 +315,4 @@ public class IncidentService {
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Incident not found"));
     }
 }
+

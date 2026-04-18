@@ -1,4 +1,4 @@
-package com.example.backend.dto;
+﻿package com.example.backend.dto;
 
 import com.example.backend.model.ResourceStatus;
 import jakarta.validation.constraints.Min;
@@ -11,32 +11,34 @@ import lombok.Setter;
 @Setter
 public class FacilityRequest {
 
-    @NotBlank(message = "Facility name is required")
+    @NotBlank
     private String name;
 
-    @NotBlank(message = "Facility type is required")
+    @NotBlank
     private String type;
 
-    @NotBlank(message = "Facility location is required")
+    @NotBlank
     private String location;
 
-    @NotNull(message = "Capacity is required")
-    @Min(value = 1, message = "Capacity must be greater than 0")
+    @NotNull
+    @Min(1)
     private Integer capacity;
 
     private String description;
 
-    @NotNull(message = "Availability is required")
+    @NotNull
     private Boolean available;
 
-    @NotNull(message = "Status is required")
+    @NotNull
     private ResourceStatus status;
 
+    @NotBlank
     private String operatingHours;
 
-    @NotBlank(message = "Opening time is required")
+    @NotBlank
     private String openingTime;
 
-    @NotBlank(message = "Closing time is required")
+    @NotBlank
     private String closingTime;
 }
+

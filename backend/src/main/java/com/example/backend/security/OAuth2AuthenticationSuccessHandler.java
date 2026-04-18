@@ -1,4 +1,4 @@
-package com.example.backend.security;
+﻿package com.example.backend.security;
 
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
@@ -58,7 +58,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         String normalizedEmail = email.toLowerCase();
         String resolvedName = oauth2User.getAttribute("name");
         if (resolvedName == null || resolvedName.isBlank()) {
-            resolvedName = normalizedEmail;
+            // Use the part before @ as the display name
+            resolvedName = normalizedEmail.contains("@")
+                ? normalizedEmail.substring(0, normalizedEmail.indexOf('@'))
+                : normalizedEmail;
         }
         final String fullName = resolvedName;
 
@@ -78,3 +81,4 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         response.sendRedirect(redirectUrl);
     }
 }
+

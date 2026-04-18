@@ -1,4 +1,4 @@
-package com.example.backend.repository;
+﻿package com.example.backend.repository;
 
 import com.example.backend.model.Booking;
 import com.example.backend.model.BookingStatus;
@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,6 +31,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("endTime") LocalTime endTime
     );
 
+    Page<Booking> findByUserId(Long userId, Pageable pageable);
+
+    Page<Booking> findByStatus(BookingStatus status, Pageable pageable);
+
+    Page<Booking> findByBookingDate(LocalDate bookingDate, Pageable pageable);
+
+    Page<Booking> findByStatusAndBookingDate(BookingStatus status, LocalDate bookingDate, Pageable pageable);
+
+    // kept for non-paginated internal use (conflict checks etc.)
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     List<Booking> findByStatusOrderByCreatedAtDesc(BookingStatus status);
@@ -39,3 +50,4 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findAllByOrderByCreatedAtDesc();
 }
+

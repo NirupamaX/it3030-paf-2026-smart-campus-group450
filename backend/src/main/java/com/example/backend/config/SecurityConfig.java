@@ -1,4 +1,4 @@
-package com.example.backend.config;
+﻿package com.example.backend.config;
 
 import com.example.backend.security.JwtAuthFilter;
 import com.example.backend.security.OAuth2AuthenticationSuccessHandler;
@@ -46,11 +46,12 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth ->
                 auth
                     .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**").permitAll()
-                    .requestMatchers("/uploads/**").permitAll()
+                    .requestMatchers("/uploads/**", "/h2-console/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/facilities/**").authenticated()
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/incidents/technician/**").hasAnyRole("ADMIN", "TECHNICIAN")
@@ -76,3 +77,4 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 }
+
