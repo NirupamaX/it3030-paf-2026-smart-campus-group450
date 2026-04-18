@@ -3,6 +3,9 @@ package com.example.backend.service;
 import com.example.backend.dto.FacilityRequest;
 import com.example.backend.model.Facility;
 import com.example.backend.repository.FacilityRepository;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
@@ -117,15 +120,18 @@ public class FacilityService {
             throw new ResponseStatusException(BAD_REQUEST, "Opening time and closing time are required");
         }
 
-        if (openingTime.compareTo(closingTime) >= 0) {
+        LocalTime openTime = parseFlexibleTime(openingTime);
+        LocalTime closeTime = parseFlexibleTime(closingTime);
+
+        if (!openTime.isBefore(closeTime)) {
             throw new ResponseStatusException(BAD_REQUEST, "Opening time must be before closing time");
         }
 
         String name = safeTrim(request.getName());
-        String type = safeTrim(request.getType());
-        String location = safeTrim(request.getLocation());
+        String typeValue = safeTrim(request.getType());
+        String locationValue = safeTrim(request.getLocation());
 
-        if (name == null || type == null || location == null) {
+        if (name == null || typeValue == null || locationValue == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Name, type, and location are required");
         }
     }
@@ -134,8 +140,8 @@ public class FacilityService {
         String name = request.getName().trim();
         String type = request.getType().trim();
         String location = request.getLocation().trim();
-        String openingTime = request.getOpeningTime().trim();
-        String closingTime = request.getClosingTime().trim();
+        String openingTime = normalizeTime(request.getOpeningTime().trim());
+        String closingTime = normalizeTime(request.getClosingTime().trim());
 
         facility.setName(name);
         facility.setType(type);
@@ -146,9 +152,27 @@ public class FacilityService {
         facility.setStatus(request.getStatus());
         facility.setOpeningTime(openingTime);
         facility.setClosingTime(closingTime);
-
-        // Auto-generate operating hours from opening and closing times
         facility.setOperatingHours(openingTime + "-" + closingTime);
+    }
+
+    private LocalTime parseFlexibleTime(String value) {
+        try {
+            return LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm"));
+        } catch (DateTimeParseException e) {
+            try {
+                return LocalTime.parse(value.toUpperCase(Locale.ROOT), DateTimeFormatter.ofPattern("hh:mm a"));
+            } catch (DateTimeParseException ex) {
+                throw new ResponseStatusException(
+                    BAD_REQUEST,
+                    "Invalid time format. Use HH:mm or hh:mm AM/PM"
+                );
+            }
+        }
+    }
+
+    private String normalizeTime(String value) {
+        LocalTime parsed = parseFlexibleTime(value);
+        return parsed.format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     private String normalize(String value) {
