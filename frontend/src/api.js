@@ -8,6 +8,7 @@ function getToken() {
 async function request(path, options = {}) {
   const token = getToken();
   const isFormData = options.body instanceof FormData;
+
   const headers = {
     ...(options.headers || {}),
   };
@@ -75,11 +76,19 @@ export async function listFacilities(filters = {}) {
   if (filters.q) params.set('q', filters.q);
   if (filters.type) params.set('type', filters.type);
   if (filters.location) params.set('location', filters.location);
-  if (Number.isFinite(filters.capacityMin)) params.set('capacityMin', String(filters.capacityMin));
-  if (Number.isFinite(filters.capacityMax)) params.set('capacityMax', String(filters.capacityMax));
+  if (Number.isFinite(filters.capacityMin)) {
+    params.set('capacityMin', String(filters.capacityMin));
+  }
+  if (Number.isFinite(filters.capacityMax)) {
+    params.set('capacityMax', String(filters.capacityMax));
+  }
 
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return request(`/facilities${suffix}`);
+}
+
+export async function getFacilityById(id) {
+  return request(`/facilities/${id}`);
 }
 
 export async function createFacility(payload) {
