@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FacilityRepository extends JpaRepository<Facility, Long> {
+
     List<Facility> findByNameContainingIgnoreCaseOrTypeContainingIgnoreCaseOrLocationContainingIgnoreCase(
         String name,
         String type,
@@ -12,4 +13,8 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
     );
 
     List<Facility> findByTypeIgnoreCase(String type);
+
+    boolean existsByNameIgnoreCaseAndLocationIgnoreCase(String name, String location);
+
+    boolean existsByNameIgnoreCaseAndLocationIgnoreCaseAndIdNot(String name, String location, Long id);
 }

@@ -11,33 +11,32 @@ import lombok.Setter;
 @Setter
 public class FacilityRequest {
 
-    @NotBlank
+    @NotBlank(message = "Facility name is required")
     private String name;
 
-    @NotBlank
+    @NotBlank(message = "Facility type is required")
     private String type;
 
-    @NotBlank
+    @NotBlank(message = "Facility location is required")
     private String location;
 
-    @NotNull
-    @Min(1)
+    @NotNull(message = "Capacity is required")
+    @Min(value = 1, message = "Capacity must be greater than 0")
     private Integer capacity;
 
     private String description;
 
-    @NotNull
+    @NotNull(message = "Availability is required")
     private Boolean available;
 
-    @NotNull
+    @NotNull(message = "Status is required")
     private ResourceStatus status;
 
-    @NotBlank
     private String operatingHours;
 
-    @NotBlank
+    @NotBlank(message = "Opening time is required")
     private String openingTime;
 
-    @NotBlank
+    @NotBlank(message = "Closing time is required")
     private String closingTime;
 }
