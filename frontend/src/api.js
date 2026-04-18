@@ -45,6 +45,18 @@ export const register = (payload) =>
 
 export const getMe = () => request('/auth/me');
 
+export const forgotPassword = (email) =>
+  request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+
+export const resetPassword = (payload) =>
+  request('/auth/reset-password', { method: 'POST', body: JSON.stringify(payload) });
+
+export const sendOtp = (email) =>
+  request('/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) });
+
+export const verifyOtp = (email, otp) =>
+  request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) });
+
 // ── Facilities ────────────────────────────────────────────────────────────────
 export function listFacilities(filters = {}) {
   const params = new URLSearchParams();
