@@ -1,4 +1,4 @@
-﻿package com.example.backend.service;
+package com.example.backend.service;
 
 import com.example.backend.dto.BookingDecisionRequest;
 import com.example.backend.dto.BookingRequest;
@@ -167,7 +167,7 @@ public class BookingService {
     }
 
     public Page<Booking> listAll(BookingStatus status, LocalDate bookingDate, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(page, size);
         if (status != null && bookingDate != null) {
             return bookingRepository.findByStatusAndBookingDate(status, bookingDate, pageable);
         }
@@ -177,7 +177,7 @@ public class BookingService {
         if (bookingDate != null) {
             return bookingRepository.findByBookingDate(bookingDate, pageable);
         }
-        return bookingRepository.findAll(pageable);
+        return bookingRepository.findAllWithDetails(pageable);
     }
 
     public Page<Booking> listByUserId(Long userId, User actor, int page, int size) {
@@ -186,7 +186,7 @@ public class BookingService {
         if (!isOwner && !isAdmin) {
             throw new ResponseStatusException(FORBIDDEN, "You can only view your own bookings");
         }
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(page, size);
         return bookingRepository.findByUserId(userId, pageable);
     }
 

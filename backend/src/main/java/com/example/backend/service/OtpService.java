@@ -1,4 +1,4 @@
-﻿package com.example.backend.service;
+package com.example.backend.service;
 import jakarta.mail.internet.MimeMessage;
 import java.time.Instant;
 import java.util.Map;

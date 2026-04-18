@@ -1,4 +1,4 @@
-﻿package com.example.backend.config;
+package com.example.backend.config;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

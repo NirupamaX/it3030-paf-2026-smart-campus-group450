@@ -29,9 +29,18 @@ export default function AdminDashboard() {
     setLoading(true);
     setError('');
     try {
+      console.log('Fetching bookings with filters:', query);
       const data = await getAllBookings(query);
-      setBookings(data);
+      console.log('Raw API response:', data);
+      
+      // Extract content array from PagedResponse
+      const bookingsList = data.content || data;
+      console.log('Extracted bookings:', bookingsList);
+      console.log('First booking status:', bookingsList[0]?.status, 'Type:', typeof bookingsList[0]?.status);
+      
+      setBookings(bookingsList);
     } catch (requestError) {
+      console.error('Error loading bookings:', requestError);
       setError(requestError.message);
     } finally {
       setLoading(false);
@@ -122,41 +131,48 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody>
-            {bookings.map((booking) => (
-              <tr key={booking.id}>
-                <td>{booking.id}</td>
-                <td>{booking.user?.fullName || booking.userId}</td>
-                <td>{booking.facility?.name || booking.resourceId}</td>
-                <td>{booking.bookingDate}</td>
-                <td>
-                  {booking.startTime} - {booking.endTime}
-                </td>
-                <td>
-                  <span className={statusClass(booking.status)}>{booking.status}</span>
-                </td>
-                <td>{booking.rejectionReason || '-'}</td>
-                <td>
-                  {booking.status === 'PENDING' && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        onClick={() => decide(booking.id, 'APPROVED')}
-                      >
-                        Approve
-                      </button>{' '}
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        onClick={() => openRejectModal(booking.id)}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {bookings.map((booking) => {
+              const isPending = String(booking.status).toUpperCase() === 'PENDING';
+              console.log(`Booking ${booking.id}: status="${booking.status}", isPending=${isPending}`);
+              
+              return (
+                <tr key={booking.id}>
+                  <td>{booking.id}</td>
+                  <td>{booking.user?.fullName || booking.userId}</td>
+                  <td>{booking.facility?.name || booking.resourceId}</td>
+                  <td>{booking.bookingDate}</td>
+                  <td>
+                    {booking.startTime} - {booking.endTime}
+                  </td>
+                  <td>
+                    <span className={statusClass(booking.status)}>{booking.status}</span>
+                  </td>
+                  <td>{booking.rejectionReason || '-'}</td>
+                  <td>
+                    {isPending ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => decide(booking.id, 'APPROVED')}
+                        >
+                          Approve
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => openRejectModal(booking.id)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <span style={{ color: '#999' }}>-</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

@@ -39,6 +39,10 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+function fmt(value) {
+  return formatDate(value);
+}
+
 function todayDateValue() {
   return new Date().toISOString().split('T')[0];
 }
@@ -116,6 +120,14 @@ function App() {
     openingTime: '08:00', closingTime: '20:00',
   });
   const [editingFacilityId, setEditingFacilityId] = useState(null);
+  const [bookingForm, setBookingForm] = useState({
+    facilityId: '',
+    bookingDate: todayDateValue(),
+    startTime: '',
+    endTime: '',
+    purpose: '',
+    expectedAttendees: 1,
+  });
   const [incidentForm, setIncidentForm] = useState({
     title: '', description: '', location: '', category: 'OTHER',
     priority: 'MEDIUM', preferredContact: '', imageUrls: [],
@@ -133,6 +145,11 @@ function App() {
   const isAdmin = role === 'ADMIN';
   const isTech  = role === 'TECHNICIAN';
 
+  const selectedBookingFacility = useMemo(
+    () => facilities.find((f) => String(f.id) === String(bookingForm.facilityId)) || null,
+    [facilities, bookingForm.facilityId]
+  );
+
   const visibleTabs = useMemo(() => {
     if (isAdmin) return TABS;
     if (isTech)  return ['Facilities', 'Incidents', 'Notifications'];
@@ -140,6 +157,7 @@ function App() {
   }, [isAdmin, isTech]);
 
   const clear = () => { setError(''); setInfo(''); };
+  const clearMessages = clear;
 
   // â”€â”€ Loaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const loadFacilities = useCallback(async (q = '') => {
@@ -286,6 +304,25 @@ function App() {
     });
   };
 
+  const removeFacility = async (facilityId) => {
+    clear();
+
+    if (!window.confirm('Delete this facility? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteFacility(facilityId);
+      setInfo('Facility deleted.');
+      if (editingFacilityId === facilityId) {
+        resetFacilityForm();
+      }
+      await loadFacilities(facilitySearch);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const submitBooking = async (e) => {
     e.preventDefault();
     clearMessages();
@@ -356,6 +393,48 @@ function App() {
       await loadIncidents(role);
       await loadNotifications();
     } catch (err) { setError(err.message); }
+  };
+
+  const removeImage = (urlToRemove) => {
+    setIncidentForm((previous) => ({
+      ...previous,
+      imageUrls: (previous.imageUrls || []).filter((url) => url !== urlToRemove),
+    }));
+  };
+
+  const handleImageUpload = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const remainingSlots = Math.max(0, 3 - (incidentForm.imageUrls || []).length);
+    const filesToUpload = files.slice(0, remainingSlots);
+
+    if (filesToUpload.length === 0) {
+      event.target.value = '';
+      return;
+    }
+
+    setUploadingImages(true);
+    clear();
+    try {
+      const uploaded = await uploadIncidentImages(filesToUpload);
+      const uploadedUrls = uploaded
+        .map((item) => {
+          if (typeof item === 'string') return item;
+          return item?.url || item?.fileUrl || item?.path || null;
+        })
+        .filter(Boolean);
+
+      setIncidentForm((previous) => ({
+        ...previous,
+        imageUrls: [...(previous.imageUrls || []), ...uploadedUrls].slice(0, 3),
+      }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploadingImages(false);
+      event.target.value = '';
+    }
   };
 
   const openIncidentDetail = async (incident) => {

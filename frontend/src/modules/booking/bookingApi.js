@@ -36,7 +36,7 @@ export async function createBookingRequest(payload) {
 
 export async function getFacilities() {
   try {
-    const response = await api.get('/v1/facilities');
+    const response = await api.get('/v1/facilities', { params: { availableOnly: true } });
     return response.data;
   } catch (error) {
     throw new Error(normalizeError(error));

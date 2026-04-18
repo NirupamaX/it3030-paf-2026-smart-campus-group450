@@ -1,4 +1,4 @@
-﻿package com.example.backend.dto;
+package com.example.backend.dto;
 
 import com.example.backend.model.ResourceStatus;
 import jakarta.validation.constraints.Min;

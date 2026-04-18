@@ -1,4 +1,4 @@
-﻿package com.example.backend.config;
+package com.example.backend.config;
 
 import com.example.backend.security.JwtAuthFilter;
 import com.example.backend.security.OAuth2AuthenticationSuccessHandler;

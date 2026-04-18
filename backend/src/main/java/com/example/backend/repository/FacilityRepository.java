@@ -1,4 +1,4 @@
-﻿package com.example.backend.repository;
+package com.example.backend.repository;
 
 import com.example.backend.model.Facility;
 import java.util.List;
@@ -12,5 +12,9 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
     );
 
     List<Facility> findByTypeIgnoreCase(String type);
+    
+    List<Facility> findByAvailableTrue();
+    
+    List<Facility> findByAvailableTrueOrderByNameAsc();
 }
 

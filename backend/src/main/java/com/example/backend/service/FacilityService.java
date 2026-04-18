@@ -1,4 +1,4 @@
-﻿package com.example.backend.service;
+package com.example.backend.service;
 
 import com.example.backend.dto.FacilityRequest;
 import com.example.backend.model.Facility;
@@ -46,7 +46,8 @@ public class FacilityService {
         String type,
         String location,
         Integer capacityMin,
-        Integer capacityMax
+        Integer capacityMax,
+        Boolean availableOnly
     ) {
         if (capacityMin != null && capacityMax != null && capacityMin > capacityMax) {
             throw new ResponseStatusException(BAD_REQUEST, "capacityMin cannot be greater than capacityMax");
@@ -59,6 +60,7 @@ public class FacilityService {
         return facilityRepository
             .findAll()
             .stream()
+            .filter(facility -> !Boolean.TRUE.equals(availableOnly) || facility.isAvailable())
             .filter(facility ->
                 normalizedQuery == null ||
                 containsIgnoreCase(facility.getName(), normalizedQuery) ||

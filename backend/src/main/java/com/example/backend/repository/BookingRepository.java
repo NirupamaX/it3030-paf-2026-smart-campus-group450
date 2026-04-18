@@ -1,4 +1,4 @@
-﻿package com.example.backend.repository;
+package com.example.backend.repository;
 
 import com.example.backend.model.Booking;
 import com.example.backend.model.BookingStatus;
@@ -31,13 +31,25 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("endTime") LocalTime endTime
     );
 
-    Page<Booking> findByUserId(Long userId, Pageable pageable);
+    @Query(value = "SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.user LEFT JOIN FETCH b.facility WHERE b.user.id = :userId ORDER BY b.createdAt DESC",
+           countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.user.id = :userId")
+    Page<Booking> findByUserId(@Param("userId") Long userId, Pageable pageable);
 
-    Page<Booking> findByStatus(BookingStatus status, Pageable pageable);
+    @Query(value = "SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.user LEFT JOIN FETCH b.facility WHERE b.status = :status ORDER BY b.createdAt DESC",
+           countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.status = :status")
+    Page<Booking> findByStatus(@Param("status") BookingStatus status, Pageable pageable);
 
-    Page<Booking> findByBookingDate(LocalDate bookingDate, Pageable pageable);
+    @Query(value = "SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.user LEFT JOIN FETCH b.facility WHERE b.bookingDate = :bookingDate ORDER BY b.createdAt DESC",
+           countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.bookingDate = :bookingDate")
+    Page<Booking> findByBookingDate(@Param("bookingDate") LocalDate bookingDate, Pageable pageable);
 
-    Page<Booking> findByStatusAndBookingDate(BookingStatus status, LocalDate bookingDate, Pageable pageable);
+    @Query(value = "SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.user LEFT JOIN FETCH b.facility WHERE b.status = :status AND b.bookingDate = :bookingDate ORDER BY b.createdAt DESC",
+           countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.status = :status AND b.bookingDate = :bookingDate")
+    Page<Booking> findByStatusAndBookingDate(@Param("status") BookingStatus status, @Param("bookingDate") LocalDate bookingDate, Pageable pageable);
+
+    @Query(value = "SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.user LEFT JOIN FETCH b.facility ORDER BY b.createdAt DESC",
+           countQuery = "SELECT COUNT(b) FROM Booking b")
+    Page<Booking> findAllWithDetails(Pageable pageable);
 
     // kept for non-paginated internal use (conflict checks etc.)
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);

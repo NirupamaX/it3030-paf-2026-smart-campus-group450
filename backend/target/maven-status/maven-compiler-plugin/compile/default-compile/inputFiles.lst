@@ -1,8 +1,10 @@
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\BackendApplication.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\ApiExceptionHandler.java
+D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\AuditLogInterceptor.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\BookingSchemaCompatibilityConfig.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\DataInitializer.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\PasswordEncoderConfig.java
+D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\RateLimitFilter.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\SecurityConfig.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\config\WebConfig.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\controller\AdminController.java
@@ -22,6 +24,9 @@ D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backe
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\IncidentCreateRequest.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\IncidentUpdateRequest.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\LoginRequest.java
+D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\OtpRequest.java
+D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\OtpVerifyRequest.java
+D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\PagedResponse.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\RegisterRequest.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\dto\ViewMapper.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\model\Booking.java
@@ -56,4 +61,5 @@ D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backe
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\service\IncidentService.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\service\LocalFileStorageService.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\service\NotificationService.java
+D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\service\OtpService.java
 D:\Smart Campus Operations Hub\Codes\it3030-paf-2026-smart-campus-group450\backend\src\main\java\com\example\backend\service\UserService.java

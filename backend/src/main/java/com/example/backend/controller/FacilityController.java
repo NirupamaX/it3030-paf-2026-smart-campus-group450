@@ -1,4 +1,4 @@
-﻿package com.example.backend.controller;
+package com.example.backend.controller;
 
 import com.example.backend.dto.FacilityRequest;
 import com.example.backend.dto.ViewMapper;
@@ -33,10 +33,11 @@ public class FacilityController {
         @RequestParam(required = false) String type,
         @RequestParam(required = false) String location,
         @RequestParam(required = false) Integer capacityMin,
-        @RequestParam(required = false) Integer capacityMax
+        @RequestParam(required = false) Integer capacityMax,
+        @RequestParam(required = false, defaultValue = "false") Boolean availableOnly
     ) {
         return facilityService
-            .list(q, type, location, capacityMin, capacityMax)
+            .list(q, type, location, capacityMin, capacityMax, availableOnly)
             .stream()
             .map(ViewMapper::facility)
             .toList();

@@ -1,4 +1,4 @@
-﻿package com.example.backend.controller;
+package com.example.backend.controller;
 
 import com.example.backend.dto.AuthResponse;
 import com.example.backend.dto.LoginRequest;

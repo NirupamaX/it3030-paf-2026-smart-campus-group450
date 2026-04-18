@@ -1,4 +1,4 @@
-﻿package com.example.backend.security;
+package com.example.backend.security;
 
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
