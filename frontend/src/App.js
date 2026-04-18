@@ -6,6 +6,7 @@ import {
   MessageSquare, Upload, X
 } from 'lucide-react';
 import LoginPage from './LoginPage';
+import ForgotPasswordPage from './ForgotPasswordPage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   addIncidentComment, assignIncident, bookingDecision, cancelBooking,
@@ -41,7 +42,18 @@ function fmt(v) {
 function App() {
   const [mode, setMode]   = useState('login');
   const [tab, setTab]     = useState('Facilities');
-  const [token, setToken] = useState(localStorage.getItem('campusx_token'));
+  const [token, setToken] = useState(() => {
+    // Check for OAuth token in URL first (?token=...)
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      localStorage.setItem('campusx_token', urlToken);
+      // Clean the token from the URL without reloading
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return urlToken;
+    }
+    return localStorage.getItem('campusx_token');
+  });
   const [user, setUser]   = useState(null);
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
@@ -345,6 +357,13 @@ function App() {
 
   // ── Auth screen ────────────────────────────────────────────────────────────
   if (!token) {
+    if (mode === 'forgot') {
+      return (
+        <div className="login-root">
+          <ForgotPasswordPage onBack={() => setMode('login')} />
+        </div>
+      );
+    }
     return (
       <div className="login-root">
         {error && <div className="alert error toast">{error}</div>}
@@ -354,6 +373,7 @@ function App() {
           loginForm={loginForm} setLoginForm={setLoginForm} onLogin={onLogin}
           registerForm={registerForm} setRegisterForm={setRegisterForm} onRegister={onRegister}
           loading={loading} ROLES={ROLES}
+          onForgotPassword={() => setMode('forgot')}
         />
       </div>
     );
