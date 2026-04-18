@@ -7,8 +7,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -22,6 +20,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final JwtCookieUtil jwtCookieUtil;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.frontend.base-url:http://localhost:3000}")
@@ -30,10 +29,12 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     public OAuth2AuthenticationSuccessHandler(
         UserRepository userRepository,
         JwtService jwtService,
+        JwtCookieUtil jwtCookieUtil,
         PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.jwtCookieUtil = jwtCookieUtil;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -73,8 +74,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         });
 
         String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
-        String redirectUrl =
-            frontendBaseUrl + "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
-        response.sendRedirect(redirectUrl);
+        
+        // Set JWT as httpOnly cookie instead of URL parameter
+        jwtCookieUtil.addJwtToCookie(response, token);
+        
+        response.sendRedirect(frontendBaseUrl);
     }
 }

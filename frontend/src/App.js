@@ -12,7 +12,7 @@ import {
   createBooking, createFacility, createIncident, deleteFacility, getMe,
   getUnreadCount, listAllBookings, listAssignedIncidents,
   listFacilities, listIncidentComments, listMyBookings, listMyIncidents,
-  listNotifications, listTechnicians, listUsers, login, markNotificationRead,
+  listNotifications, listTechnicians, listUsers, login, logout, markNotificationRead,
   register, updateFacility, updateIncidentStatus, uploadIncidentImages,
 } from './api';
 
@@ -41,7 +41,7 @@ function fmt(v) {
 function App() {
   const [mode, setMode]   = useState('login');
   const [tab, setTab]     = useState('Facilities');
-  const [token, setToken] = useState(localStorage.getItem('campusx_token'));
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser]   = useState(null);
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
@@ -128,7 +128,7 @@ function App() {
   }, []);
 
   const loadAll = useCallback(async (currentUser) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     setLoading(true); clear();
     try {
       let me = currentUser;
@@ -142,27 +142,40 @@ function App() {
       ]);
     } catch (e) {
       if (e.message.includes('401') || e.message.includes('403')) {
-        localStorage.removeItem('campusx_token');
-        setToken(null); setUser(null);
+        setIsAuthenticated(false); setUser(null);
       }
       setError(e.message);
     } finally { setLoading(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [isAuthenticated]);
 
-  useEffect(() => { loadAll(null); }, [token]); // eslint-disable-line
+  useEffect(() => { loadAll(null); }, [isAuthenticated]); // eslint-disable-line
 
-  useEffect(() => {
+  useEffect(() {
     if (!visibleTabs.includes(tab)) setTab(visibleTabs[0]);
   }, [visibleTabs, tab]);
+
+  // Check authentication on app load
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const me = await getMe();
+        setUser(me);
+        setIsAuthenticated(true);
+      } catch (err) {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+    checkAuth();
+  }, []);
 
   // ── Auth ───────────────────────────────────────────────────────────────────
   const onLogin = async (e) => {
     e.preventDefault(); clear(); setLoading(true);
     try {
-      const p = await login(loginForm);
-      localStorage.setItem('campusx_token', p.token);
-      setToken(p.token);
+      await login(loginForm);
+      setIsAuthenticated(true);
       setInfo('Welcome to CampusX!');
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -171,17 +184,20 @@ function App() {
   const onRegister = async (e) => {
     e.preventDefault(); clear(); setLoading(true);
     try {
-      const p = await register(registerForm);
-      localStorage.setItem('campusx_token', p.token);
-      setToken(p.token);
+      await register(registerForm);
+      setIsAuthenticated(true);
       setInfo('Account created. Welcome!');
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   };
 
-  const onLogout = () => {
-    localStorage.removeItem('campusx_token');
-    setToken(null); setUser(null); setInfo('Logged out.');
+  const onLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    setIsAuthenticated(false); setUser(null); setInfo('Logged out.');
   };
 
   // ── Facilities ─────────────────────────────────────────────────────────────
@@ -344,7 +360,7 @@ function App() {
   };
 
   // ── Auth screen ────────────────────────────────────────────────────────────
-  if (!token) {
+  if (!isAuthenticated) {
     return (
       <div className="login-root">
         {error && <div className="alert error toast">{error}</div>}

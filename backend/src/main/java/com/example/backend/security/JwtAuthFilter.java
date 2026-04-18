@@ -18,10 +18,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final JwtCookieUtil jwtCookieUtil;
 
-    public JwtAuthFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+    public JwtAuthFilter(
+        JwtService jwtService,
+        UserDetailsService userDetailsService,
+        JwtCookieUtil jwtCookieUtil
+    ) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.jwtCookieUtil = jwtCookieUtil;
     }
 
     @Override
@@ -30,14 +36,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         HttpServletResponse response,
         FilterChain filterChain
     ) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
+        String jwt = null;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Try to get JWT from Authorization header first
+        final String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7);
+        }
+
+        // If not found in header, try to get from cookie
+        if (jwt == null) {
+            jwt = jwtCookieUtil.getJwtFromCookie(request);
+        }
+
+        if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String jwt = authHeader.substring(7);
         String username = jwtService.extractUsername(jwt);
 
         if (

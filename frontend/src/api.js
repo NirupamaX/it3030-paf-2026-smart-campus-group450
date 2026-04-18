@@ -1,23 +1,52 @@
 const API_BASE =
   process.env.REACT_APP_API_BASE || `http://${window.location.hostname || 'localhost'}:8082/api`;
 
-function getToken() {
-  return localStorage.getItem('campusx_token');
+/**
+ * Get CSRF token from cookie or meta tag
+ */
+function getCsrfToken() {
+  // Try to get from meta tag first
+  const meta = document.querySelector('meta[name="_csrf"]');
+  if (meta) return meta.getAttribute('content');
+
+  // Try to get from cookie
+  const name = '_csrf=';
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const cookieArray = decodedCookie.split(';');
+  for (let cookie of cookieArray) {
+    cookie = cookie.trim();
+    if (cookie.indexOf(name) === 0) {
+      return cookie.substring(name.length);
+    }
+  }
+  return null;
 }
 
 async function request(path, options = {}) {
-  const token = getToken();
   const isFormData = options.body instanceof FormData;
-  const headers = { ...(options.headers || {}) };
+  const headers = { ...options.headers || {} };
 
+  // Set Content-Type for non-form-data requests
   if (!isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
-  if (token) headers.Authorization = `Bearer ${token}`;
+
+  // Add CSRF token for state-changing requests (POST, PUT, PATCH, DELETE)
+  const method = options.method?.toUpperCase() || 'GET';
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
 
   let response;
   try {
-    response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include', // Include cookies (httpOnly JWT) in all requests
+    });
   } catch {
     throw new Error('Cannot connect to backend. Make sure the backend is running on port 8082.');
   }
@@ -42,6 +71,9 @@ export const login = (payload) =>
 
 export const register = (payload) =>
   request('/auth/register', { method: 'POST', body: JSON.stringify(payload) });
+
+export const logout = () =>
+  request('/auth/logout', { method: 'POST' });
 
 export const getMe = () => request('/auth/me');
 

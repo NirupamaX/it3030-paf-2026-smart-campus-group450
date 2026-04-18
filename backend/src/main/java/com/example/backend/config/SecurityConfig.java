@@ -19,6 +19,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 
 @Configuration
 @EnableMethodSecurity
@@ -43,11 +45,43 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // CSRF protection using cookies
+        CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokenRepository.setCookiePath("/");
+        csrfTokenRepository.setCookieHttpOnly(false);
+        csrfTokenRepository.setCookieSecure(true); // Set to false for dev, true for HTTPS in production
+        csrfTokenRepository.setCookieSameSite("Strict");
+
+        XorCsrfTokenRequestAttributeHandler csrfRequestHandler = new XorCsrfTokenRequestAttributeHandler();
+        csrfRequestHandler.setCsrfRequestAttributeName("_csrf");
+
         http
-            .csrf(AbstractHttpConfigurer::disable)
+            // CSRF protection enabled (disabled only for file uploads if needed)
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(csrfTokenRepository)
+                .csrfRequestHandler(csrfRequestHandler)
+                .ignoringRequestMatchers("/api/incidents/uploads") // Multipart form data
+            )
+            // Security headers
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.sameOrigin())
+                .httpStrictTransportSecurity()
+                    .includeSubDomains(true)
+                    .preload(true)
+                    .maxAgeInSeconds(31536000)
+                .and()
+                .contentSecurityPolicy(csp -> csp
+                    .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:8082 http://localhost:3000")
+                )
+                .xssProtection()
+                .and()
+                .contentTypeOptions()
+            )
+            // CORS with defaults
             .cors(Customizer.withDefaults())
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+            // Session management
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Authorization rules
             .authorizeHttpRequests(auth ->
                 auth
                     .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**").permitAll()
@@ -58,7 +92,9 @@ public class SecurityConfig {
                     .anyRequest()
                     .authenticated()
             )
-                .oauth2Login(oauth -> oauth.successHandler(oAuth2AuthenticationSuccessHandler))
+            // OAuth2 login
+            .oauth2Login(oauth -> oauth.successHandler(oAuth2AuthenticationSuccessHandler))
+            // Authentication provider and filter
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
