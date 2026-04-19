@@ -159,6 +159,7 @@ export const deleteIncidentComment = (id, commentId) =>
 
 export const listIncidentAttachments = (id) => request(`/incidents/${id}/attachments`);
 
+
 // â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const listNotifications = () => request('/notifications');
 export const getUnreadCount = () => request('/notifications/unread-count');
