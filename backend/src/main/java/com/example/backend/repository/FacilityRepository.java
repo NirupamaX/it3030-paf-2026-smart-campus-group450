@@ -18,3 +18,4 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
     List<Facility> findByAvailableTrueOrderByNameAsc();
 }
 
+

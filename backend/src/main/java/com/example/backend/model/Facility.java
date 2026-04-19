@@ -61,6 +61,5 @@ public class Facility {
     void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
-    
 }
 
