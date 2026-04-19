@@ -18,6 +18,7 @@ public class FacilityService {
     public FacilityService(FacilityRepository facilityRepository) {
         this.facilityRepository = facilityRepository;
     }
+    
 
     public Facility create(FacilityRequest request) {
         Facility facility = new Facility();
@@ -104,5 +105,6 @@ public class FacilityService {
         facility.setOpeningTime(request.getOpeningTime());
         facility.setClosingTime(request.getClosingTime());
     }
+
 }
 
