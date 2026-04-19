@@ -54,6 +54,7 @@ public class FacilityController {
     public Map<String, Object> update(@PathVariable Long id, @Valid @RequestBody FacilityRequest request) {
         return ViewMapper.facility(facilityService.update(id, request));
     }
+    
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")

@@ -17,6 +17,7 @@ public class FacilityRequest {
     @NotBlank
     private String type;
 
+
     @NotBlank
     private String location;
 
