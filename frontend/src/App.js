@@ -993,6 +993,7 @@ function App() {
               </article>
             </section>
           )}
+          
         </div>
       </main>
 
@@ -1049,6 +1050,7 @@ function App() {
       )}
     </div>
   );
+
 }
 
 export default App;
