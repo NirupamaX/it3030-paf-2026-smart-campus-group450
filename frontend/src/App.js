@@ -598,9 +598,9 @@ function App() {
           {/* â”€â”€ FACILITIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {tab === 'Facilities' && (
             <section className="panel-grid">
-              <article className="panel">
+              <article className="facilities-panel">
                 <h2>Facilities</h2>
-                <div className="row" style={{ marginBottom: '16px' }}>
+                <div className="facilities-search-container row" style={{ marginBottom: '16px' }}>
                   <input className="input" placeholder="Search by name, type, locationâ€¦"
                     value={facilitySearch}
                     onChange={e => setFacilitySearch(e.target.value)}
@@ -609,35 +609,29 @@ function App() {
                   <button className="ghost" type="button"
                     onClick={() => loadFacilities(facilitySearch)}>Search</button>
                 </div>
-                {facilities.length === 0 ? <Empty text="No facilities found."/> : (
+                {facilities.length === 0 ? <div className="facilities-empty">No facilities found.</div> : (
                   <div className="content-grid">
                     {facilities.map(f => (
-                      <div className="card" key={f.id}>
+                      <div className="facility-card" key={f.id}>
                         {/* Image placeholder */}
-                        <div style={{
-                          width: '100%', height: '140px', borderRadius: '8px',
-                          background: 'linear-gradient(135deg, var(--primary-light), var(--secondary-light))',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          marginBottom: '12px', color: 'var(--text-muted)', fontSize: '0.8rem',
-                          border: '2px dashed var(--border-color)'
-                        }}>
-                          <Building2 size={32} style={{ opacity: 0.3 }}/>
+                        <div className="facility-card-image">
+                          <Building2 size={48} className="facility-card-icon"/>
                         </div>
-                        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                          <h3 style={{ margin: 0 }}>{f.name}</h3>
-                          <Badge status={f.status}/>
+                        <div className="facility-card-header">
+                          <h3 className="facility-card-title">{f.name}</h3>
+                          <div className="facility-card-status"><Badge status={f.status}/></div>
                         </div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '8px' }}>
-                          {f.description || 'No description.'}
+                        <p className="facility-card-description">
+                          {f.description || 'No description available.'}
                         </p>
-                        <div className="meta" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          <span>ðŸ“ {f.location}</span>
-                          <span>ðŸ· {f.type}</span>
-                          <span>ðŸ‘¥ Cap: {f.capacity}</span>
-                          <span>ðŸ• {f.openingTime}â€“{f.closingTime}</span>
+                        <div className="facility-card-meta">
+                          <span className="facility-meta-item">{f.location}</span>
+                          <span className="facility-meta-item">{f.type}</span>
+                          <span className="facility-meta-item">Cap: {f.capacity}</span>
+                          <span className="facility-meta-item">{f.openingTime}–{f.closingTime}</span>
                         </div>
                         {isAdmin && (
-                          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                          <div className="facility-card-actions">
                             <button className="ghost" type="button" onClick={() => startEditFacility(f)}>Edit</button>
                             <button className="btn btn-danger" type="button" onClick={() => removeFacility(f.id)}>Delete</button>
                           </div>
